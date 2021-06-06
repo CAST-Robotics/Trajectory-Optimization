@@ -1,4 +1,4 @@
-#include "headers/MinJerk.h"
+#include "MinJerk.h"
 
 Vector3d* MinJerk::cubicInterpolate(Vector3d theta_ini, Vector3d theta_f, Vector3d theta_dot_ini, Vector3d theta_dot_f, double tf){
     /* 

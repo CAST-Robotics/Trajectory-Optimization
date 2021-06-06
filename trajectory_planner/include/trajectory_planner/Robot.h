@@ -1,9 +1,12 @@
 #pragma once
 
-#include "headers/DCM.h"
-#include "headers/Link.h"
-#include "headers/PID.h"
-#include "headers/Ankle.h"
+#include <ros/ros.h>
+#include "trajectory_planner/JntAngs.h"
+
+#include "DCM.h"
+#include "Link.h"
+#include "PID.h"
+#include "Ankle.h"
 
 #include "fstream"
 
@@ -12,17 +15,18 @@ using namespace std;
 class Robot{
     friend class Surena;
     public:
-        Robot();
+        Robot(ros::NodeHandle *nh);
 
         vector<double> spinOnline(VectorXd forceSensor, Vector3d gyro, Vector3d accelerometer, double time);
-        vector<double> spinOffline(int iter);
-
+        void spinOffline(int iter, double* config);
+        bool jntAngsCallback(trajectory_planner::JntAngs::Request  &req,
+                            trajectory_planner::JntAngs::Response &res);
     private:
 
         DCMPlanner* trajectoryPlanner_;
         Ankle* anklePlanner_;
 
-        vector<_Link> joints_;
+        double joints_[12];
 
         PID* DCMController_;
         PID* CoMController_;
@@ -36,4 +40,6 @@ class Robot{
         Vector3d* com_;
         Vector3d* rAnkle_;
         Vector3d* lAnkle_;
+
+        ros::ServiceServer jntAngsServer_;
 };

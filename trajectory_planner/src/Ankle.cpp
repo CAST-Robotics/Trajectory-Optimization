@@ -1,4 +1,4 @@
-#include "headers/Ankle.h"
+#include "Ankle.h"
 
 Ankle::Ankle(double step_time, double ds_time, double height, double alpha, short int num_step, double dt){
     this->tStep_ = step_time;

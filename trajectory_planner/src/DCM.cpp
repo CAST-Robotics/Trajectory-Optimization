@@ -1,4 +1,4 @@
-#include "headers/DCM.h"
+#include "DCM.h"
 
 DCMPlanner::DCMPlanner(double deltaZ, double stepTime, double doubleSupportTime, double dt, int stepCount, double alpha){
     this->deltaZ_ = deltaZ;

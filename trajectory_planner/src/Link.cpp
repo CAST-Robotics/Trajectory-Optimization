@@ -1,4 +1,4 @@
-#include "headers/Link.h"
+#include "Link.h"
 
  _Link::_Link(short int ID, string name,short int parentID, short int numChilds, short int* childID, double length){
     this->ID_= ID;

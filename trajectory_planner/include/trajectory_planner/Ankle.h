@@ -1,6 +1,6 @@
 # pragma once
 
-#include "headers/MinJerk.h"
+#include "MinJerk.h"
 
 class Ankle: private MinJerk{
     public:

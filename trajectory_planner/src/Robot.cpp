@@ -1,6 +1,10 @@
-#include "headers/Robot.h" 
+#include "Robot.h" 
 
-Robot::Robot(){
+Robot::Robot(ros::NodeHandle *nh){
+
+    jntAngsServer_ = nh->advertiseService("/jnt_angs", 
+            &Robot::jntAngsCallback, this);
+
     short int pelvis_children[3] = {0, 13, 26};
     _Link pelvis(30,"pelvis",30,3,pelvis_children,0.0);
 
@@ -17,12 +21,12 @@ Robot::Robot(){
     _Link rAnkleP(4,"rAnkleP",3,1,rAnkleP_children,0.3);
     _Link rAnkleR(1,"rAnkleR",4,0,nullptr,0.0);
 
-    joints_.push_back(rHipR);
-    joints_.push_back(rHipP);
-    joints_.push_back(rHipY);
-    joints_.push_back(rKnee);
-    joints_.push_back(rAnkleP);
-    joints_.push_back(rAnkleR);
+    // joints_.push_back(rHipR);
+    // joints_.push_back(rHipP);
+    // joints_.push_back(rHipY);
+    // joints_.push_back(rKnee);
+    // joints_.push_back(rAnkleP);
+    // joints_.push_back(rAnkleR);
 
     ///////////// Left Leg Parameters ////////////////////
     short int lHipR_children[1] = {14};      // LHipP
@@ -37,12 +41,12 @@ Robot::Robot(){
     _Link lAnkleP(17,"lAnkleP",16,1,rAnkleP_children,0.3);
     _Link lAnkleR(18,"lAnkleR",17,0,nullptr,0.0);
 
-    joints_.push_back(lHipR);
-    joints_.push_back(lHipP);
-    joints_.push_back(lHipY);
-    joints_.push_back(lKnee);
-    joints_.push_back(lAnkleP);
-    joints_.push_back(lAnkleR);
+    // joints_.push_back(lHipR);
+    // joints_.push_back(lHipP);
+    // joints_.push_back(lHipY);
+    // joints_.push_back(lKnee);
+    // joints_.push_back(lAnkleP);
+    // joints_.push_back(lAnkleR);
 
     trajectoryPlanner_ = new DCMPlanner(0.6, 1.0, 0.3, 0.001, 6, 0.5);
     anklePlanner_ = new Ankle(1.0, 0.3, 0.05,0.5,6,0.001);
@@ -88,7 +92,7 @@ vector<double> Robot::spinOnline(VectorXd forceSensor, Vector3d gyro, Vector3d a
     // Add DCM + CoM controllers
 }
 
-vector<double> Robot::spinOffline(int iter){
+void Robot::spinOffline(int iter, double* config){
 
     MatrixXd lfoot(3,1);
     MatrixXd rfoot(3,1);
@@ -99,16 +103,8 @@ vector<double> Robot::spinOffline(int iter){
     pelvis << com_[iter](0), com_[iter](1), com_[iter](2);
     doIK(pelvis,attitude,lfoot,attitude,rfoot,attitude);
 
-    vector<double> config(29,0.0);
-    for(int i = 0; i < 19; i++){
-        if (i < 6)
-            config[i] = joints_[i].q();     // right leg
-        else if (i > 12)
-            config[i] = joints_[i-7].q();   // left leg
-        else
-            continue;
-    }
-    return config;
+    for(int i = 0; i < 12; i++)
+        config[i] = joints_[i];     // right leg(0-5) & left leg(6-11)
 }
 
 void Robot::doIK(MatrixXd pelvisP, Matrix3d pelvisR, MatrixXd leftAnkleP, Matrix3d leftAnkleR, MatrixXd rightAnkleP, Matrix3d rightAnkleR){
@@ -116,8 +112,8 @@ void Robot::doIK(MatrixXd pelvisP, Matrix3d pelvisR, MatrixXd leftAnkleP, Matrix
     double* q_left = this->geometricIK(pelvisP, pelvisR, leftAnkleP, leftAnkleR, true);
     double* q_right = this->geometricIK(pelvisP, pelvisR, rightAnkleP, rightAnkleR, false);
     for(int i = 0; i < 6; i ++){
-        joints_[i].q(q_right[i]);
-        joints_[i+6].q(q_left[i]);
+        joints_[i] = q_right[i];
+        joints_[i+6] = q_left[i];
     }
 }
 
@@ -146,8 +142,8 @@ double* Robot::geometricIK(MatrixXd p1, MatrixXd r1, MatrixXd p7, MatrixXd r7, b
         Reference: Introduction to Humanoid Robotics by Kajita        https://www.springer.com/gp/book/9783642545351
         1 ----> Body        7-----> Foot
     */
-    double a = joints_[3].length_;
-    double b = joints_[4].length_;
+    double a = 0.3535;
+    double b = 0.3;
     double e = 0;
     MatrixXd E(3,1);
     E << 0.0, 0.0, -e;
@@ -155,11 +151,13 @@ double* Robot::geometricIK(MatrixXd p1, MatrixXd r1, MatrixXd p7, MatrixXd r7, b
     MatrixXd D(3,1);
     if (isLeft)
         //D << 0.0,0.09,0.0;
-        D << 0.0,joints_[0].length_,0.0;
+        D << 0.0,0.09,0.0;
     else
         //D << 0.0,-0.09,0.0;
-        D << 0.0,-joints_[0].length_,0.0;
-    MatrixXd r = r7.transpose() * (p1 + r1 * D + r1 * e - p7);
+        D << 0.0,-0.09,0.0;
+        
+    //MatrixXd r = r7.transpose() * (p1 + r1 * D + r1 * e - p7); // r1 * e ??
+    MatrixXd r = r7.transpose() * (p1 + r1 * D - p7);
     double C = r.norm();
     double c3 = (pow(C,2) - pow(a,2) - pow(b,2))/(2 * a * b);
     if (c3 >= 1){
@@ -192,4 +190,23 @@ double* Robot::geometricIK(MatrixXd p1, MatrixXd r1, MatrixXd p7, MatrixXd r7, b
     //return q;
     double* choreonoid_only= new double[6] {q[1],q[2],q[0],q[3],q[4],q[5]};
     return choreonoid_only;
+}
+
+bool Robot::jntAngsCallback(trajectory_planner::JntAngs::Request  &req,
+                            trajectory_planner::JntAngs::Response &res)
+{
+    double jnt_angs[12];
+    this->spinOffline(req.iter, jnt_angs);
+    for(int i = 0; i < 12; i++)
+        res.jnt_angs[i] = jnt_angs[i];
+    return true;
+}
+
+int main(int argc, char* argv[])
+{
+    ros::init(argc, argv, "optimization_node");
+    ros::NodeHandle nh;
+    Robot surena(&nh);
+    ROS_INFO("Ready to calculate joint angles.");
+    ros::spin();
 }

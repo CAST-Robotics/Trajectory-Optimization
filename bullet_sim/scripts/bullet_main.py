@@ -6,6 +6,7 @@ import time
 import numpy as np
 import rospy
 from trajectory_planner.srv import JntAngs
+from optpkg.srv import Optimization
 
 class robot_sim:
     def __init__(self, real_time = False):
@@ -31,25 +32,33 @@ class robot_sim:
 
     def run(self):
         
-        rospy.wait_for_service('jntAngs')
-        try:
-            service_handle = rospy.ServiceProxy('JntAngs', JntAngs)
-            All = service_handle(self.iter)
-            leftConfig = All[6:12]
-            rightConfig = All[0:6]
-            for index in range (6):
-                pybullet.setJointMotorControl2(bodyIndex=self.robotID,
-                                        jointIndex=index,
-                                        controlMode=pybullet.POSITION_CONTROL,
-                                        targetPosition = rightConfig[index])
-                pybullet.setJointMotorControl2(bodyIndex=self.robotID,
-                                        jointIndex=index + 6,
-                                        controlMode=pybullet.POSITION_CONTROL,
-                                        targetPosition = leftConfig[index])
-            pybullet.stepSimulation()
-            
-        except rospy.ServiceException as e:
-            print("Service call failed: %s"%e)
+        # Call Servic to generate trajectory
+        # TODO
+
+        while self.iter < 1000:
+            rospy.wait_for_service("/jnt_angs")
+            try:
+                service_handle = rospy.ServiceProxy("/jnt_angs", JntAngs)
+                All = service_handle(self.iter)
+                leftConfig = All[6:12]
+                rightConfig = All[0:6]
+                for index in range (6):
+                    pybullet.setJointMotorControl2(bodyIndex=self.robotID,
+                                            jointIndex=index,
+                                            controlMode=pybullet.POSITION_CONTROL,
+                                            targetPosition = rightConfig[index])
+                    pybullet.setJointMotorControl2(bodyIndex=self.robotID,
+                                            jointIndex=index + 6,
+                                            controlMode=pybullet.POSITION_CONTROL,
+                                            targetPosition = leftConfig[index])
+                pybullet.stepSimulation()
+
+                p_r, f_r = self.zmp_1(True)
+                p_l, f_l = self.zmp_1(False)
+                zmp = self.zmp_all(p_r,p_l,f_r, f_l)
+
+            except rospy.ServiceException as e:
+                print("Jntangls Service call failed: %s"%e)
 
         pass
 

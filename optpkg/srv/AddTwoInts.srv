@@ -1,0 +1,7 @@
+float64 tstep
+float64 tds
+float64 steplen
+float64 alpha
+float64 comhight 
+---
+float64 J

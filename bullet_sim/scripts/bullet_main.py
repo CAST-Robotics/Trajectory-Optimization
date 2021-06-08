@@ -9,7 +9,7 @@ from trajectory_planner.srv import JntAngs
 from optpkg.srv import Optimization
 
 class robot_sim:
-    def __init__(self, robot_vel = 0.7, time = 5, real_time = False, freq = 240.0):
+    def __init__(self, robot_vel = 0.7, time = 5.0, real_time = False, freq = 240.0):
         ## rosrun bullet_sim bullet.py
         ## run above command in catkin_work space
         
@@ -29,15 +29,31 @@ class robot_sim:
         self.planeID = None
         self.reset()
 
-        self.reset_server = rospy.Service('reset_service',self.reset_sim, self.reset_handle)
+        # Check the service names with other packages
+        self.resetServer = rospy.Service('reset_service',self.reset_sim, self.reset_handle)
+        self.optimServer = rospy.Service('optimizer', Optimization, self.run)
 
         pass
 
-    def run(self):
+    def simulationSpin(self):
+        rospy.spin()
+        pass
+
+    def run(self, optim_req):
         
         # Call Servic to generate trajectory
-        # TODO
+        # TODO:
+        #   1 - update service names from trajectory package
+        #   2 - add optimization modes
+        rospy.wait_for_service("/jnt_angs")
+        trajectory_handle = rospy.ServiceProxy("/jnt_angs", JntAngs)
+        done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.t_step,
+                    optim_req.step_length,optim_req.COM_height)
 
+        while not done:
+            print("Trajectory generation failed, calling again...")
+            done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.t_step,
+                    optim_req.step_length,optim_req.COM_height)
         j_E = 0.0
         j_ZMP = 0.0
         j_torque = 0.0
@@ -46,8 +62,8 @@ class robot_sim:
         while self.iter < self.simTime * self.freq:
             rospy.wait_for_service("/jnt_angs")
             try:
-                service_handle = rospy.ServiceProxy("/jnt_angs", JntAngs)
-                All = service_handle(self.iter)
+                joint_state_handle = rospy.ServiceProxy("/jnt_angs", JntAngs)
+                All = joint_state_handle(self.iter)
                 leftConfig = All[6:12]
                 rightConfig = All[0:6]
                 for index in range (6):
@@ -62,6 +78,8 @@ class robot_sim:
                 pybullet.stepSimulation()
                 
                 j_E += self.calcEnergy()
+                j_torque += self.calcTorque()
+                j_vel += self.calcVel()
                 
                 zmp = self.calcZMP()
                 if self.zmpViolation(zmp):
@@ -72,13 +90,25 @@ class robot_sim:
             except rospy.ServiceException as e:
                 print("Jntangls Service call failed: %s"%e)
 
-        pass
+        return j_E
     
     def calcEnergy(self):
         energy = 0
         for i in range(12):
             energy += abs(pybullet.getJointState(self.robotID, i)[1] * pybullet.getJointState(self.robotID, i)[3])
         return energy
+
+    def calcTorque(self):
+        torque = 0
+        for i in range(12):
+            torque += abs(pybullet.getJointState(self.robotID, i)[3])
+        return torque
+    
+    def calcVel(self):
+        total_vel = 0
+        for i in range(12):
+            total_vel += abs(pybullet.getJointState(self.robotID, i)[1])
+        return total_vel
 
     def calcZMP(self):
         p_r, f_r = self.zmp_1(True)
@@ -188,5 +218,5 @@ class robot_sim:
 
 if __name__ == "__main__":
     robot = robot_sim()
-    robot.run()
+    robot.simulationSpin()
     pass

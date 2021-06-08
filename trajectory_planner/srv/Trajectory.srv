@@ -1,0 +1,8 @@
+float64 alpha
+float64 t_double_support
+float64 t_step
+float64 step_length
+float64 COM_height
+int8 step_count
+---
+bool result

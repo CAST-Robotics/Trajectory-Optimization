@@ -2,95 +2,26 @@
 
 Robot::Robot(ros::NodeHandle *nh){
 
+    trajGenServer_ = nh->advertiseService("/traj_gen", 
+            &Robot::trajGenCallback, this);
     jntAngsServer_ = nh->advertiseService("/jnt_angs", 
             &Robot::jntAngsCallback, this);
-
-    short int pelvis_children[3] = {0, 13, 26};
-    _Link pelvis(30,"pelvis",30,3,pelvis_children,0.0);
-
-    ///////////// Right Leg Parameters ////////////////////
-    short int rHipR_children[1] = {1};      // RHipP
-    _Link rHipR(0,"rHipR",30,1,rHipR_children,0.09);
-    short int rHipP_children[1] = {2};      // RHipY
-    _Link rHipP(1,"rHipP",0,1,rHipP_children,0.0);
-    short int rHipY_children[1] = {3};      // RKnee
-    _Link rHipY(2,"rHipY",1,1,rHipY_children,0.0);
-    short int rKnee_children[1] = {4};      // RAnkleP
-    _Link rKnee(3,"rKnee",2,1,rKnee_children,0.3535);
-    short int rAnkleP_children[1] = {5};    // RAnkleR
-    _Link rAnkleP(4,"rAnkleP",3,1,rAnkleP_children,0.3);
-    _Link rAnkleR(1,"rAnkleR",4,0,nullptr,0.0);
-
-    // joints_.push_back(rHipR);
-    // joints_.push_back(rHipP);
-    // joints_.push_back(rHipY);
-    // joints_.push_back(rKnee);
-    // joints_.push_back(rAnkleP);
-    // joints_.push_back(rAnkleR);
-
-    ///////////// Left Leg Parameters ////////////////////
-    short int lHipR_children[1] = {14};      // LHipP
-    _Link lHipR(13,"lHipR",30,1,lHipR_children,0.09);
-    short int lHipP_children[1] = {15};      // LHipY
-    _Link lHipP(14,"lHipP",13,1,rHipP_children,0.0);
-    short int lHipY_children[1] = {16};      // LKnee
-    _Link lHipY(15,"lHipY",14,1,rHipY_children,0.0);
-    short int lKnee_children[1] = {17};      // LAnkleP
-    _Link lKnee(16,"lKnee",15,1,rKnee_children,0.3535);
-    short int lAnkleP_children[1] = {18};    // LAnkleR
-    _Link lAnkleP(17,"lAnkleP",16,1,rAnkleP_children,0.3);
-    _Link lAnkleR(18,"lAnkleR",17,0,nullptr,0.0);
-
-    // joints_.push_back(lHipR);
-    // joints_.push_back(lHipP);
-    // joints_.push_back(lHipY);
-    // joints_.push_back(lKnee);
-    // joints_.push_back(lAnkleP);
-    // joints_.push_back(lAnkleR);
-
-    trajectoryPlanner_ = new DCMPlanner(0.6, 1.0, 0.3, 0.001, 6, 0.5);
-    anklePlanner_ = new Ankle(1.0, 0.3, 0.05,0.5,6,0.001);
-
-    ////////////////////////////// create simple foot step plan /////////////////////////////////
-    Vector3d* f = new Vector3d[6];
     
-    f[0] << 0.0, -0.09, 0.0;
-    f[1] << 0.4, 0.09, 0.0;
-    f[2] << 0.8, -0.09, 0.0;
-    f[3] << 1.2, 0.09, 0.0;
-    f[4] << 1.6, -0.09, 0.0;
-    f[5] << 2.0, 0.09, 0.0;
+    //surena iv geometrical params
     
-    trajectoryPlanner_->setFoot(f);
-    trajectoryPlanner_->getXiTrajectory();
-    Vector3d com(0.0,0.0,0.713);
-    com_ = trajectoryPlanner_->getCoM(com);
-    
-    delete f;
-    Vector3d* f2 = new Vector3d[8];
-    f2[0] << 0.0, 0.09, 0.0;
-    f2[1] << 0.0, -0.09, 0.0;
-    f2[2] << 0.4, 0.09, 0.0;
-    f2[3] << 0.8, -0.09, 0.0;
-    f2[4] << 1.2, 0.09, 0.0;
-    f2[5] << 1.6, -0.09, 0.0;
-    f2[6] << 2.0, 0.09, 0.0;
-    f2[7] << 2.0, -0.09, 0.0;
-    anklePlanner_->updateFoot(f2);
-    anklePlanner_->generateTrajectory();
-    lAnkle_ = anklePlanner_->getTrajectoryL();
-    rAnkle_ = anklePlanner_->getTrajectoryR();
-    delete f2;
-    /////////////////////////////////////////////////////////////////////////////////////////////
+    shank_ = 0.36;
+    thigh_ = 0.37;
+    torso_ = 0.115;
+    isTrajAvailable_ = false;
 
     cout << "Robot Object has been Created" << endl;
 }
 
-vector<double> Robot::spinOnline(VectorXd forceSensor, Vector3d gyro, Vector3d accelerometer, double time){
+// vector<double> Robot::spinOnline(VectorXd forceSensor, Vector3d gyro, Vector3d accelerometer, double time){
     // TODO
     // Add CoM Estimation
     // Add DCM + CoM controllers
-}
+// }
 
 void Robot::spinOffline(int iter, double* config){
 
@@ -142,24 +73,18 @@ double* Robot::geometricIK(MatrixXd p1, MatrixXd r1, MatrixXd p7, MatrixXd r7, b
         Reference: Introduction to Humanoid Robotics by Kajita        https://www.springer.com/gp/book/9783642545351
         1 ----> Body        7-----> Foot
     */
-    double a = 0.3535;
-    double b = 0.3;
-    double e = 0;
-    MatrixXd E(3,1);
-    E << 0.0, 0.0, -e;
+
     double* q = new double[6];  
     MatrixXd D(3,1);
+
     if (isLeft)
-        //D << 0.0,0.09,0.0;
-        D << 0.0,0.09,0.0;
+        D << 0.0,torso_,0.0;
     else
-        //D << 0.0,-0.09,0.0;
-        D << 0.0,-0.09,0.0;
+        D << 0.0,-torso_,0.0;
         
-    //MatrixXd r = r7.transpose() * (p1 + r1 * D + r1 * e - p7); // r1 * e ??
     MatrixXd r = r7.transpose() * (p1 + r1 * D - p7);
     double C = r.norm();
-    double c3 = (pow(C,2) - pow(a,2) - pow(b,2))/(2 * a * b);
+    double c3 = (pow(C,2) - pow(thigh_,2) - pow(shank_,2))/(2 * thigh_ * shank_);
     if (c3 >= 1){
         q[3] = 0.0;
         // Raise error
@@ -169,7 +94,7 @@ double* Robot::geometricIK(MatrixXd p1, MatrixXd r1, MatrixXd p7, MatrixXd r7, b
     }else{
         q[3] = acos(c3);       // Knee Pitch
     }
-    double q4a = asin((a/C) * sin(M_PI - q[3]));
+    double q4a = asin((thigh_/C) * sin(M_PI - q[3]));
     q[5] = atan2(r(1,0),r(2,0));   //Ankle Roll
     if (q[5] > M_PI/2){
         q[5] = q[5] - M_PI;
@@ -187,18 +112,72 @@ double* Robot::geometricIK(MatrixXd p1, MatrixXd r1, MatrixXd p7, MatrixXd r7, b
     q[0] = atan2(-R(0,1),R(1,1));         // Hip Yaw
     q[1] = atan2(R(2,1), -R(0,1) * sin(q[0]) + R(1,1) * cos(q[0]));           // Hip Roll
     q[2] = atan2(-R(2,0), R(2,2));        // Hip Pitch
-    //return q;
-    double* choreonoid_only= new double[6] {q[1],q[2],q[0],q[3],q[4],q[5]};
-    return choreonoid_only;
+    return q;
+}
+
+bool Robot::trajGenCallback(trajectory_planner::Trajectory::Request  &req,
+                            trajectory_planner::Trajectory::Response &res)
+{
+    /*
+        ROS service for generating robot COM & ankles trajectories
+    */
+    ROS_INFO("Generating Trajectory started.");
+    double alpha = req.alpha;
+    double t_ds = req.t_double_support;
+    double t_s = req.t_step;
+    double COM_height = req.COM_height;
+    double step_len = req.step_length;
+    int num_step = req.step_count;
+    double dt = 1.0/240.0;
+    double swing_height = 0.05;
+    double init_COM_height = 0.7;
+
+    trajectoryPlanner_ = new DCMPlanner(COM_height, t_s, t_ds, dt, num_step, alpha);
+    anklePlanner_ = new Ankle(t_s, t_ds, swing_height, alpha, num_step, dt);
+    Vector3d* dcm_rf = new Vector3d[num_step];  // DCM rF
+    Vector3d* ankle_rf = new Vector3d[num_step + 2]; // Ankle rF
+    
+
+    for (int i = 0; i < num_step; i++){
+        dcm_rf[i] << i * step_len, pow(-1, i + 1) * torso_, 0.0;  // pow(-1, i + 1) : for specifing that first swing leg is left leg
+        ankle_rf[i+1] << i * step_len, pow(-1, i + 1) * torso_, 0.0;
+    }
+    ankle_rf[0] << 0.0, -ankle_rf[1](1), 0.0;
+    ankle_rf[num_step + 1] << ankle_rf[num_step](0), -ankle_rf[num_step](0), 0.0;
+    trajectoryPlanner_->setFoot(dcm_rf);
+    trajectoryPlanner_->getXiTrajectory();
+    Vector3d com(0.0,0.0,init_COM_height);
+    com_ = trajectoryPlanner_->getCoM(com);
+    delete[] dcm_rf;
+
+    anklePlanner_->updateFoot(ankle_rf);
+    anklePlanner_->generateTrajectory();
+    lAnkle_ = anklePlanner_->getTrajectoryL();
+    rAnkle_ = anklePlanner_->getTrajectoryR();
+    delete[] ankle_rf;
+
+    res.result = true;
+    isTrajAvailable_ = true;
+    return true;
 }
 
 bool Robot::jntAngsCallback(trajectory_planner::JntAngs::Request  &req,
                             trajectory_planner::JntAngs::Response &res)
 {
-    double jnt_angs[12];
-    this->spinOffline(req.iter, jnt_angs);
-    for(int i = 0; i < 12; i++)
-        res.jnt_angs[i] = jnt_angs[i];
+    /*
+        ROS service for returning joint angles. before calling this service, 
+        you must first call traj_gen service. 
+    */
+    if (isTrajAvailable_)
+    {
+        double jnt_angs[12];
+        this->spinOffline(req.iter, jnt_angs);
+        for(int i = 0; i < 12; i++)
+            res.jnt_angs[i] = jnt_angs[i];
+    }else{
+        ROS_INFO("First call traj_gen service");
+        return false;
+    }
     return true;
 }
 
@@ -207,6 +186,5 @@ int main(int argc, char* argv[])
     ros::init(argc, argv, "optimization_node");
     ros::NodeHandle nh;
     Robot surena(&nh);
-    ROS_INFO("Ready to calculate joint angles.");
     ros::spin();
 }

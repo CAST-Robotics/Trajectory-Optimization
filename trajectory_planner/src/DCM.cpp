@@ -73,7 +73,7 @@ void DCMPlanner::updateSS(){
 
     for (int i = 0; i < length; i ++){
         time = dt_ * i;
-        stepNum = int(time)/int(tStep_);
+        stepNum = floor(time / tStep_);
         xi_[i] = rVRP_[stepNum] + exp(sqrt(K_G/deltaZ_) * (fmod(time,tStep_) - tStep_)) * (xiEOS_[stepNum] - rVRP_[stepNum]);
     }
 }

@@ -183,7 +183,7 @@ bool Robot::jntAngsCallback(trajectory_planner::JntAngs::Request  &req,
 
 int main(int argc, char* argv[])
 {
-    ros::init(argc, argv, "optimization_node");
+    ros::init(argc, argv, "trajectory_node");
     ros::NodeHandle nh;
     Robot surena(&nh);
     ros::spin();

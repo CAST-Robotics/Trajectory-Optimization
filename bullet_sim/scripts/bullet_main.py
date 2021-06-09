@@ -2,7 +2,7 @@
 
 import pybullet_data
 import pybullet
-import time
+# import time
 import numpy as np
 import rospy
 from trajectory_planner.srv import JntAngs

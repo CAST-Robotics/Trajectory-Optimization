@@ -2,6 +2,7 @@
 
 #include <ros/ros.h>
 #include "trajectory_planner/JntAngs.h"
+#include "trajectory_planner/Trajectory.h"
 
 #include "DCM.h"
 #include "Link.h"
@@ -17,11 +18,17 @@ class Robot{
     public:
         Robot(ros::NodeHandle *nh);
 
-        vector<double> spinOnline(VectorXd forceSensor, Vector3d gyro, Vector3d accelerometer, double time);
+        // vector<double> spinOnline(VectorXd forceSensor, Vector3d gyro, Vector3d accelerometer, double time);
         void spinOffline(int iter, double* config);
         bool jntAngsCallback(trajectory_planner::JntAngs::Request  &req,
                             trajectory_planner::JntAngs::Response &res);
+        bool trajGenCallback(trajectory_planner::Trajectory::Request  &req,
+                            trajectory_planner::Trajectory::Response &res);
     private:
+
+        double thigh_;
+        double shank_;
+        double torso_;
 
         DCMPlanner* trajectoryPlanner_;
         Ankle* anklePlanner_;
@@ -42,4 +49,6 @@ class Robot{
         Vector3d* lAnkle_;
 
         ros::ServiceServer jntAngsServer_;
+        ros::ServiceServer trajGenServer_;
+        bool isTrajAvailable_;
 };

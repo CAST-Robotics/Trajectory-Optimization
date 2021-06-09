@@ -58,6 +58,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   JntAngs.srv
+  Trajectory.srv
 )
 
 ## Generate actions in the 'action' folder

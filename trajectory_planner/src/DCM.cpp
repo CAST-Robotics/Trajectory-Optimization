@@ -94,7 +94,8 @@ void DCMPlanner::updateXiDSPositions(){
             for (int i = 0; i < (1/dt_) * tDS_ * (alpha_); ++i){
                 double time = dt_ * i;
                 xi_[i] = coefs[0] + coefs[1] * time + coefs[2] * pow(time,2) + coefs[3] * pow(time,3);
-            }          
+            }
+            delete[] coefs;     
         }
         else{
             xi_dot_i = (xiDSI_[step] - rVRP_[step - 1]) * sqrt(K_G/deltaZ_);
@@ -104,6 +105,7 @@ void DCMPlanner::updateXiDSPositions(){
                 double time = fmod(i * dt_,tStep_);
                 xi_[i] = coefs[0] + coefs[1] * time + coefs[2] * pow(time,2) + coefs[3] * pow(time,3);
             }
+            delete[] coefs;
         }   
     }
 }
@@ -149,4 +151,15 @@ Vector3d* DCMPlanner::minJerkInterpolate(Vector3d theta_ini, Vector3d theta_f, V
     coefs[2] = 3/pow(tf,2) * (theta_f - theta_ini) - 1/tf * (2 * theta_dot_ini + theta_dot_f);
     coefs[3] = -2/pow(tf,3) * (theta_f - theta_ini) + 1/pow(tf,2) * (theta_dot_ini + theta_dot_f);
     return coefs;
+}
+
+
+DCMPlanner::~DCMPlanner(){
+    delete[] rF_;
+    delete[] rVRP_;
+    delete[] xiEOS_;
+    delete[] xi_;
+    delete[] xiDSI_;
+    delete[] xiDSE_;
+    delete[] COM_;
 }

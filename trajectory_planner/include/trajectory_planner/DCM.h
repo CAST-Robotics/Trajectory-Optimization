@@ -26,6 +26,7 @@ class DCMPlanner: private MinJerk{
     friend class Surena;
     public:
         DCMPlanner(double deltaZ, double stepTime, double doubleSupportTime, double dt, int stepCount = 6, double alpha = 0.5);
+        ~DCMPlanner();
         void setFoot(Vector3d rF[]);
         Vector3d* getXiTrajectory();
         Vector3d* getXiDot();

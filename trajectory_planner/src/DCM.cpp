@@ -44,14 +44,24 @@ Vector3d* DCMPlanner::getXiDot(){
 }
 
 Vector3d* DCMPlanner::getCoM(Vector3d COM_0){
-    int length = 1/dt_ * tStep_ * stepCount_;
+    int length = int((stepCount_ * tStep_ + 1) / dt_);  // +1 second is for decreasing robot's height from COM_0 to deltaZ
+    cout << length << endl;
     COM_ = new Vector3d[length];
+
+    // decreasing robot's height
+    Vector3d COM_init(0.0, 0.0, deltaZ_);  // initial COM when robot start to walk
+    Vector3d* coefs = this->minJerkInterpolate(COM_0, COM_init, Vector3d::Zero(3), Vector3d::Zero(3), 1);
+    for (int i = 0; i < 1/dt_; i++){
+        double time = dt_ * i;
+        COM_[i] = coefs[0] + coefs[1] * time + coefs[2] * pow(time,2) + coefs[3] * pow(time,3);
+    }
+    // COM trajectory based on DCM
     Vector3d inte;
-    for (int i = 0; i < length; i++){
+    for (int i = 1/dt_; i < length; i++){
         inte << 0.0,0.0,0.0;
-        for(int j = 0; j < i ; j ++)
+        for(int j = 0; j < i - 1/dt_; j++)
             inte += sqrt(K_G/deltaZ_) * xi_[j] * exp(j * dt_ * sqrt(K_G/deltaZ_)) * dt_;
-        COM_[i] = (inte + COM_0) * exp(-i*dt_*sqrt(K_G/deltaZ_));
+        COM_[i] = (inte + COM_init) * exp(-(i - 1 / dt_)*dt_*sqrt(K_G/deltaZ_)); // COM_0 or COM_init ??
     }
     return COM_;
 }

@@ -34,7 +34,7 @@ Vector3d* Ankle::getTrajectoryR(){
 
 void Ankle::generateTrajectory(){
 
-    int lenght = int(stepCount_ * tStep_ / dt_);
+    int lenght = int((stepCount_ * tStep_ + 1) / dt_);  // +1 second is for decreasing robot's height from COM_0 to deltaZ
     lFoot_ = new Vector3d[lenght];
     rFoot_ = new Vector3d[lenght];
 
@@ -42,16 +42,23 @@ void Ankle::generateTrajectory(){
         updateTrajectory(true);
     else
         updateTrajectory(false);
-
-    // ofstream file("log/ankle.csv");
-    // for(int i = 0; i < int(stepCount_ * tStep_ / dt_); ++i){
-    //     file << lFoot_[i](0) << ","<< lFoot_[i](1) << ","<< lFoot_[i](2) << "," << rFoot_[i](0) << ","<< rFoot_[i](1) << ","<< rFoot_[i](2) << "\n"; 
-    // }
-    // file.close();
 }
 
 void Ankle::updateTrajectory(bool left_first){
     int index = 0;
+    
+    // decreasing robot's height
+    for (int i = 0; i < 1/dt_; i++){
+        double time = dt_ * i;
+        if(footPose_[0](1) > footPose_[1](1)){
+            lFoot_[index] = footPose_[0];
+            rFoot_[index] = footPose_[1];
+        }else{
+            lFoot_[index] = footPose_[1];
+            rFoot_[index] = footPose_[0];
+        }
+        index ++;
+    }
 
     if (left_first){
         for (int step = 1; step < stepCount_ + 1 ; step ++){

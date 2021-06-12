@@ -7,6 +7,7 @@ import numpy as np
 import rospy
 from trajectory_planner.srv import JntAngs, Trajectory
 from optimization.srv import Optimization
+import math
 
 class robot_sim:
     def __init__(self, robot_vel = 0.7, time = 5.0, real_time = False, freq = 240.0):
@@ -38,12 +39,15 @@ class robot_sim:
         pass
 
     def run(self, optim_req):
-        
+        self.reset()
+        print("server is running")
         rospy.wait_for_service("/traj_gen")
         trajectory_handle = rospy.ServiceProxy("/traj_gen", Trajectory)
         done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.t_step,
-                    optim_req.step_length,optim_req.COM_height)
-
+                    optim_req.step_length,optim_req.COM_height,math.ceil(self.simTime/optim_req.t_step))
+        #done = trajectory_handle(0.5,0.45,1.5,0.3,0.65,7)
+        if done:
+            print("trajectory has been recieved...")
         while not done:
             print("Trajectory generation failed, calling again...")
             done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.t_step,
@@ -58,7 +62,8 @@ class robot_sim:
             rospy.wait_for_service("/jnt_angs")
             try:
                 joint_state_handle = rospy.ServiceProxy("/jnt_angs", JntAngs)
-                All = joint_state_handle(self.iter)
+                All = joint_state_handle(self.iter).jnt_angs
+
                 leftConfig = All[6:12]
                 rightConfig = All[0:6]
                 for index in range (6):
@@ -76,7 +81,7 @@ class robot_sim:
                 j_torque += self.calcTorque()
                 j_vel += self.calcVel()
                 
-                zmp = self.calcZMP()
+                """zmp = self.calcZMP()
                 # getting support polygon
                 V = list("")
                 for point in pybullet.getContactPoints(self.robotID, self.planeID, 5):
@@ -84,26 +89,22 @@ class robot_sim:
                 for point in pybullet.getContactPoints(self.robotID, self.planeID, 11):
                     V.append(point[6])
                 V = np.array(V)
-                if V.shape[0] == 8:
-                    v = list("")
-                    for item in V:
-                        v.append(np.array([item[0],item[1],np.sum(item)]))
-                    V = np.array(v)
-                elif V.shape[0] == 4:
-                    v = list("")
-                    for item in V:
-                        v.append(np.array([item[0],item[1],np.sum(item)]))
-                    V = np.array(v)
-                
+                v = list("")
+                for item in V:
+                    v.append(np.array([item[0],item[1],np.sum(item)]))
+                V = np.array(v)
+                print(V)
                 V = V[V[:, 2].argsort()]
-                if self.zmpViolation(zmp):
+                if self.zmpViolation(zmp, V):
                     j_ZMP += self.zmpOffset(zmp, V)
                 else:
-                    j_ZMP -= self.zmpOffset
+                    j_ZMP -= self.zmpOffset(zmp, V)"""
+                self.iter += 1
 
             except rospy.ServiceException as e:
                 print("Jntangls Service call failed: %s"%e)
 
+        print(j_E)
         return j_E
     
     def calcEnergy(self):
@@ -214,7 +215,7 @@ class robot_sim:
             dist = self.point2line(V[i],V[i+1], zmp)
             if dist < min_dist:
                 min_dist = dist
-        return dist
+        return min_dist
     
     def reset(self):
         
@@ -229,6 +230,7 @@ class robot_sim:
             pybullet.setRealTimeSimulation(1)
         else:
             pybullet.setRealTimeSimulation(0)
+        print("simulation restarted")
         pass
 
     def close():
@@ -238,4 +240,5 @@ class robot_sim:
 if __name__ == "__main__":
     robot = robot_sim()
     robot.simulationSpin()
+    #robot.run([])
     pass

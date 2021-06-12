@@ -5,7 +5,7 @@ import pybullet
 # import time
 import numpy as np
 import rospy
-from trajectory_planner.srv import JntAngs
+from trajectory_planner.srv import JntAngs, Trajectory
 from optpkg.srv import Optimization
 
 class robot_sim:
@@ -29,9 +29,7 @@ class robot_sim:
         self.planeID = None
         self.reset()
 
-        # Check the service names with other packages
-        self.resetServer = rospy.Service('reset_service',self.reset_sim, self.reset_handle)
-        self.optimServer = rospy.Service('optimizer', Optimization, self.run)
+        self.optimServer = rospy.Service('optimization', Optimization, self.run)
 
         pass
 
@@ -41,12 +39,8 @@ class robot_sim:
 
     def run(self, optim_req):
         
-        # Call Servic to generate trajectory
-        # TODO:
-        #   1 - update service names from trajectory package
-        #   2 - add optimization modes
-        rospy.wait_for_service("/jnt_angs")
-        trajectory_handle = rospy.ServiceProxy("/jnt_angs", JntAngs)
+        rospy.wait_for_service("/traj_gen")
+        trajectory_handle = rospy.ServiceProxy("/traj_gen", Trajectory)
         done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.t_step,
                     optim_req.step_length,optim_req.COM_height)
 
@@ -54,6 +48,7 @@ class robot_sim:
             print("Trajectory generation failed, calling again...")
             done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.t_step,
                     optim_req.step_length,optim_req.COM_height)
+        
         j_E = 0.0
         j_ZMP = 0.0
         j_torque = 0.0
@@ -201,16 +196,6 @@ class robot_sim:
         else:
             pybullet.setRealTimeSimulation(0)
         pass
-
-    def reset_sim(self,req):
-        rospy.loginfo("Restarting Simulation...")
-        try:
-            self.reset()
-            rospy.loginfo("Simulation Restarted")
-            return 1
-        except:
-            rospy.loginfo("Service failed")
-            return 0
 
     def close():
         pybullet.disconnect()

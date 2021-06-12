@@ -22,7 +22,7 @@ class robot_sim:
         rospy.init_node('surena_sim')
         self.rate = rospy.Rate(self.freq)
 
-        self.phisycsClient = pybullet.connect(pybullet.GUI)
+        self.phisycsClient = pybullet.connect(pybullet.DIRECT)
         pybullet.setAdditionalSearchPath(pybullet_data.getDataPath())
 
         self.robotID = None
@@ -222,7 +222,7 @@ class robot_sim:
         pybullet.resetSimulation()
         self.planeID = pybullet.loadURDF("plane.urdf")
         pybullet.setGravity(0,0,-9.81)
-        self.robotID = pybullet.loadURDF("src/Trajectory-Optimization/bullet_sim/meshes/simple_robot.urdf",
+        self.robotID = pybullet.loadURDF("/bullet_sim/surena4.urdf",
                                 [0.0,0.0,0.0],pybullet.getQuaternionFromEuler([0.0,0.0,0.0]),useFixedBase = 0)
         
         if self.real_time:

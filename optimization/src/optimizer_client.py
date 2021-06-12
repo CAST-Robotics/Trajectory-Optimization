@@ -1,9 +1,9 @@
 #! /usr/bin/env python3
 import rospy
 import sys
-from optpkg.srv import Optimization
-from optpkg.srv import OptimizationRequest
-from optpkg.srv import OptimizationResponse
+from optimization.srv import Optimization
+from optimization.srv import OptimizationRequest
+from optimization.srv import OptimizationResponse
 import numpy as np
 from geneticalgorithm import geneticalgorithm as ga
 

@@ -9,10 +9,7 @@ DCMPlanner::DCMPlanner(double deltaZ, double stepTime, double doubleSupportTime,
     else
         throw "Invalid Value for alpha";
     this->dt_ = dt;
-    if (stepCount > 3)
-        this->stepCount_ = stepCount;
-    else
-        throw "at least 4 steps is needed for trajectory generator";
+    this->stepCount_ = stepCount;
     cout << "DCMPlanner Object created" << endl;
 }
 

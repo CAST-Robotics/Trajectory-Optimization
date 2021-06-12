@@ -77,8 +77,27 @@ class robot_sim:
                 j_vel += self.calcVel()
                 
                 zmp = self.calcZMP()
+                # getting support polygon
+                V = list("")
+                for point in pybullet.getContactPoints(self.robotID, self.planeID, 5):
+                    V.append(point[6])
+                for point in pybullet.getContactPoints(self.robotID, self.planeID, 11):
+                    V.append(point[6])
+                V = np.array(V)
+                if V.shape[0] == 8:
+                    v = list("")
+                    for item in V:
+                        v.append(np.array([item[0],item[1],np.sum(item)]))
+                    V = np.array(v)
+                elif V.shape[0] == 4:
+                    v = list("")
+                    for item in V:
+                        v.append(np.array([item[0],item[1],np.sum(item)]))
+                    V = np.array(v)
+                
+                V = V[V[:, 2].argsort()]
                 if self.zmpViolation(zmp):
-                    j_ZMP += self.zmpOffset(zmp)
+                    j_ZMP += self.zmpOffset(zmp, V)
                 else:
                     j_ZMP -= self.zmpOffset
 
@@ -139,42 +158,57 @@ class robot_sim:
         # point p0 and the line passing through p2,p1
         # https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
 
-        return abs((p2[0]-p1[0]) * (p1[1]-p0[1]) - (p1[0]-p0[0]) * (p2[1]-p1[1])) / ((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
+        return abs((p2[0]-p1[0]) * (p1[1]-p0[1]) - (p1[0]-p0[0]) * (p2[1]-p1[1])) / ((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)**0.5
 
-    def zmpViolation(self, zmp):
+    def is_left(self,P0, P1, P2):
+        return (P1[0] - P0[0]) * (P2[1] - P0[1]) - (P2[0] - P0[0]) * (P1[1] - P0[1])
+
+
+    def zmpViolation(self, zmp, V):
         # checks if zmp is inside the polygon shaped by
         # vertexes V using Windings algorithm
         # inspiration: http://www.dgp.toronto.edu/~mac/e-stuff/point_in_polygon.py
 
-        V = list("")
-        for point in pybullet.getContactPoints(self.robotID, self.planeID, 5):
-            V.append(np.array(point))
-        for point in pybullet.getContactPoints(self.robotID, self.planeID, 11):
-            V.append(np.array(point))
-        V.append(V[0])  # add first point again to close polygon
+        if (V.shape[0] == 8):
+            V = np.delete(V,3,0)
+            V = np.delete(V,3,0)
+            V = V.tolist()
+            v = list([V[0],V[2],V[4],V[5],V[3],V[1],V[0]])
+            V = np.array(v)
+        if (V.shape[0] == 4):
+            V = V.tolist()
+            v = list([V[0],V[2],V[3],V[1],V[0]])
+            V = np.array(v)
 
-        cn = 0     # crossing number
-        for i in range(len(V) - 1):
-            if ((V[i][1] <= zmp[1] and V[i+1][1] > zmp[1])   # an upward crossing
-                or (V[i][1] > zmp[1] and V[i+1][1] <= zmp[1])):  # a downward crossing
-                # compute the actual edge-ray intersect x-coordinate
-                vt = (zmp[1] - V[i][1]) / float(V[i+1][1] - V[i][1])
-                if zmp[0] < V[i][0] + vt * (V[i+1][0] - V[i][0]): # P[0] < intersect
-                    cn += 1  # a valid crossing of y=P[1] right of P[0]
-
-        if cn % 2 == 1:
-            return False
-        else:
+        wn = 0
+        for i in range(len(V)-1):     # edge from V[i] to V[i+1]
+            if V[i][1] <= zmp[1]:        # start y <= P[1]
+                if V[i+1][1] > zmp[1]:     # an upward crossing
+                    if self.is_left(V[i], V[i+1], zmp) > 0: # P left of edge
+                        wn += 1           # have a valid up intersect
+            else:                      # start y > P[1] (no test needed)
+                if V[i+1][1] <= zmp[1]:    # a downward crossing
+                    if self.is_left(V[i], V[i+1], zmp) < 0: # P right of edge
+                        wn -= 1           # have a valid down intersect
+        if wn == 0:
             return True
+        else:
+            return False
 
-    def zmpOffset(self, zmp):
+
+    def zmpOffset(self, zmp, V):
         min_dist = np.inf
 
-        V = list("")
-        for point in pybullet.getContactPoints(self.robotID, self.planeID, 5):
-            V.append(np.array(point))
-        for point in pybullet.getContactPoints(self.robotID, self.planeID, 11):
-            V.append(np.array(point))
+        if (V.shape[0] == 8):
+            V = np.delete(V,3,0)
+            V = np.delete(V,3,0)
+            V = V.tolist()
+            v = list([V[0],V[2],V[4],V[5],V[3],V[1],V[0]])
+            V = np.array(v)
+        if (V.shape[0] == 4):
+            V = V.tolist()
+            v = list([V[0],V[2],V[3],V[1],V[0]])
+            V = np.array(v)
 
         for i in range(len(V) - 1):
             dist = self.point2line(V[i],V[i+1], zmp)

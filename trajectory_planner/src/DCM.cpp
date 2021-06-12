@@ -44,14 +44,24 @@ Vector3d* DCMPlanner::getXiDot(){
 }
 
 Vector3d* DCMPlanner::getCoM(Vector3d COM_0){
-    int length = 1/dt_ * tStep_ * stepCount_;
+    int length = int((stepCount_ * tStep_ + 1) / dt_);  // +1 second is for decreasing robot's height from COM_0 to deltaZ
+    cout << length << endl;
     COM_ = new Vector3d[length];
+
+    // decreasing robot's height
+    Vector3d COM_init(0.0, 0.0, deltaZ_);  // initial COM when robot start to walk
+    Vector3d* coefs = this->minJerkInterpolate(COM_0, COM_init, Vector3d::Zero(3), Vector3d::Zero(3), 1);
+    for (int i = 0; i < 1/dt_; i++){
+        double time = dt_ * i;
+        COM_[i] = coefs[0] + coefs[1] * time + coefs[2] * pow(time,2) + coefs[3] * pow(time,3);
+    }
+    // COM trajectory based on DCM
     Vector3d inte;
-    for (int i = 0; i < length; i++){
+    for (int i = 1/dt_; i < length; i++){
         inte << 0.0,0.0,0.0;
-        for(int j = 0; j < i ; j ++)
+        for(int j = 0; j < i - 1/dt_; j++)
             inte += sqrt(K_G/deltaZ_) * xi_[j] * exp(j * dt_ * sqrt(K_G/deltaZ_)) * dt_;
-        COM_[i] = (inte + COM_0) * exp(-i*dt_*sqrt(K_G/deltaZ_));
+        COM_[i] = (inte + COM_init) * exp(-(i - 1 / dt_)*dt_*sqrt(K_G/deltaZ_)); // COM_0 or COM_init ??
     }
     return COM_;
 }
@@ -94,7 +104,8 @@ void DCMPlanner::updateXiDSPositions(){
             for (int i = 0; i < (1/dt_) * tDS_ * (alpha_); ++i){
                 double time = dt_ * i;
                 xi_[i] = coefs[0] + coefs[1] * time + coefs[2] * pow(time,2) + coefs[3] * pow(time,3);
-            }          
+            }
+            delete[] coefs;     
         }
         else{
             xi_dot_i = (xiDSI_[step] - rVRP_[step - 1]) * sqrt(K_G/deltaZ_);
@@ -104,6 +115,7 @@ void DCMPlanner::updateXiDSPositions(){
                 double time = fmod(i * dt_,tStep_);
                 xi_[i] = coefs[0] + coefs[1] * time + coefs[2] * pow(time,2) + coefs[3] * pow(time,3);
             }
+            delete[] coefs;
         }   
     }
 }
@@ -149,4 +161,15 @@ Vector3d* DCMPlanner::minJerkInterpolate(Vector3d theta_ini, Vector3d theta_f, V
     coefs[2] = 3/pow(tf,2) * (theta_f - theta_ini) - 1/tf * (2 * theta_dot_ini + theta_dot_f);
     coefs[3] = -2/pow(tf,3) * (theta_f - theta_ini) + 1/pow(tf,2) * (theta_dot_ini + theta_dot_f);
     return coefs;
+}
+
+
+DCMPlanner::~DCMPlanner(){
+    delete[] rF_;
+    delete[] rVRP_;
+    delete[] xiEOS_;
+    delete[] xi_;
+    delete[] xiDSI_;
+    delete[] xiDSE_;
+    delete[] COM_;
 }

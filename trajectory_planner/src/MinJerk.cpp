@@ -49,3 +49,14 @@ Vector3d* MinJerk::ankle5Poly(Vector3d x0, Vector3d xf, double z_max, double tf)
 
     return ans;
 }
+
+void MinJerk::write2File(Vector3d* input, int size, string file_name="data"){
+    ofstream output_file(file_name + ".csv");
+    for(int i=0; i<size; i++){
+         output_file << input[i](0) << " ,";
+         output_file << input[i](1) << " ,";
+         output_file << input[i](2) << " ,";
+         output_file << "\n";
+    }
+    output_file.close();
+}

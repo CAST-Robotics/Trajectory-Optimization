@@ -7,7 +7,7 @@ Robot::Robot(ros::NodeHandle *nh){
     jntAngsServer_ = nh->advertiseService("/jnt_angs", 
             &Robot::jntAngsCallback, this);
     
-    //surena iv geometrical params
+    // SURENA IV geometrical params
     
     shank_ = 0.36;
     thigh_ = 0.37;
@@ -130,7 +130,7 @@ bool Robot::trajGenCallback(trajectory_planner::Trajectory::Request  &req,
     int num_step = req.step_count;
     double dt = 1.0/240.0;
     double swing_height = 0.05;
-    double init_COM_height = 0.7;
+    double init_COM_height = thigh_ + shank_;  // SURENA IV initial height 
 
     trajectoryPlanner_ = new DCMPlanner(COM_height, t_s, t_ds, dt, num_step, alpha);
     anklePlanner_ = new Ankle(t_s, t_ds, swing_height, alpha, num_step, dt);

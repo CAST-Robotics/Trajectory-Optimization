@@ -6,7 +6,7 @@ import pybullet
 import numpy as np
 import rospy
 from trajectory_planner.srv import JntAngs, Trajectory
-from optpkg.srv import Optimization
+from optimization.srv import Optimization
 
 class robot_sim:
     def __init__(self, robot_vel = 0.7, time = 5.0, real_time = False, freq = 240.0):

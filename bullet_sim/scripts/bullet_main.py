@@ -2,15 +2,18 @@
 
 import pybullet_data
 import pybullet
-# import time
+
 import numpy as np
+import cv2
+
 import rospy
+
 from trajectory_planner.srv import JntAngs, Trajectory
 from optimization.srv import Optimization
 import math
 
 class robot_sim:
-    def __init__(self, robot_vel = 0.7, time = 5.0, real_time = False, freq = 240.0):
+    def __init__(self, render, robot_vel = 0.7, time = 5.0, real_time = False, freq = 240.0):
         ## rosrun bullet_sim bullet.py
         ## run above command in catkin_work space
         
@@ -19,6 +22,7 @@ class robot_sim:
         self.robotVel = robot_vel
         self.simTime = time
         self.freq = freq
+        self.render = render
 
         rospy.init_node('surena_sim')
         self.rate = rospy.Rate(self.freq)
@@ -76,12 +80,16 @@ class robot_sim:
                                             controlMode=pybullet.POSITION_CONTROL,
                                             targetPosition = leftConfig[index])
                 pybullet.stepSimulation()
+
+                if pybullet.getLinkState(self.robotID,0)[0][2] < 0.5:
+                    print("Robot Heigh is lower than minimum acceptable height (=",pybullet.getLinkState(self.robotID,0)[0][2])
+                    return np.inf
                 
                 j_E += self.calcEnergy()
                 j_torque += self.calcTorque()
                 j_vel += self.calcVel()
                 
-                """zmp = self.calcZMP()
+                zmp = self.calcZMP()
                 # getting support polygon
                 V = list("")
                 for point in pybullet.getContactPoints(self.robotID, self.planeID, 5):
@@ -89,23 +97,37 @@ class robot_sim:
                 for point in pybullet.getContactPoints(self.robotID, self.planeID, 11):
                     V.append(point[6])
                 V = np.array(V)
-                v = list("")
-                for item in V:
-                    v.append(np.array([item[0],item[1],np.sum(item)]))
-                V = np.array(v)
-                print(V)
-                V = V[V[:, 2].argsort()]
-                if self.zmpViolation(zmp, V):
-                    j_ZMP += self.zmpOffset(zmp, V)
-                else:
-                    j_ZMP -= self.zmpOffset(zmp, V)"""
+                for i in range(V.shape[0]):
+                    V[i,2] = V[i,0] + V[i,1]
+                try:
+                    V = V[V[:,2].argsort()]
+                    print("sorted vertexes",V)
+                    if self.zmpViolation(zmp, V):
+                        j_ZMP += self.zmpOffset(zmp, V)
+                    else:
+                        j_ZMP -= self.zmpOffset(zmp, V)
+                except:
+                    print("Not enogh contact points")                
+
+                if self.render and self.iter % 100 == 0:
+                    self.disp()
                 self.iter += 1
 
             except rospy.ServiceException as e:
                 print("Jntangls Service call failed: %s"%e)
 
-        print(j_E)
-        return j_E
+        if optim_req.mode == 1:
+            print(j_E)
+            return j_E
+        elif optim_req.mode == 2:
+            print(j_vel)
+            return j_vel
+        elif optim_req.mode == 3:
+            print(j_torque)
+            return j_torque
+        elif optim_req.mode == 4:
+            print(j_ZMP)
+            return j_ZMP
     
     def calcEnergy(self):
         energy = 0
@@ -217,28 +239,60 @@ class robot_sim:
                 min_dist = dist
         return min_dist
     
+    def disp(self):
+        img_arr = pybullet.getCameraImage(
+            600,
+            600,
+            viewMatrix=pybullet.computeViewMatrixFromYawPitchRoll(
+                cameraTargetPosition=[0, 0, 0],
+                distance=3.5,
+                yaw=45,
+                pitch=-10,
+                roll=0,
+                upAxisIndex=2,
+            ),
+            projectionMatrix=pybullet.computeProjectionMatrixFOV(
+                fov=60,
+                aspect=1.0,
+                nearVal=0.01,
+                farVal=100,
+            ),
+            shadow=True,
+            lightDirection=[1, 1, 1],
+        )
+        width, height, rgba, depth, mask = img_arr
+        cv2.imshow("Surena Optimization",rgba)
+        pass
+
+
+
     def reset(self):
         
         self.iter = 0
         pybullet.resetSimulation()
         self.planeID = pybullet.loadURDF("plane.urdf")
         pybullet.setGravity(0,0,-9.81)
-        self.robotID = pybullet.loadURDF("/bullet_sim/surena4.urdf",
-                                [0.0,0.0,0.0],pybullet.getQuaternionFromEuler([0.0,0.0,0.0]),useFixedBase = 0)
+        self.robotID = pybullet.loadURDF("src/bullet_sim/surena4.urdf",useFixedBase = 0)
         
         if self.real_time:
             pybullet.setRealTimeSimulation(1)
         else:
             pybullet.setRealTimeSimulation(0)
+        
+        if self.render:
+            cv2.startWindowThread()
+            cv2.namedWindow("Surena Optimization")
+
         print("simulation restarted")
         pass
 
     def close():
+        cv2.destroyAllWindows()
         pybullet.disconnect()
 
 
 if __name__ == "__main__":
-    robot = robot_sim()
+    robot = robot_sim(render=True)
     robot.simulationSpin()
     #robot.run([])
     pass

@@ -11,7 +11,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0.942"/>
       <geometry>
-        <mesh filename="meshes/pelvis.STL"/>
+        <mesh filename="package://bullet_sim/meshes/pelvis.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -47,7 +47,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/Thigh-Right.STL"/>
+        <mesh filename="package://bullet_sim/meshes/Thigh-Right.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -69,7 +69,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/Shank-Right.STL"/>
+        <mesh filename="package://bullet_sim/meshes/Shank-Right.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -98,7 +98,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/Foot-Right.STL"/>
+        <mesh filename="package://bullet_sim/meshes/Foot-Right.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -134,7 +134,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/Thigh-Left.STL"/>
+        <mesh filename="package://bullet_sim/meshes/Thigh-Left.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -156,7 +156,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/Shank-Left.STL"/>
+        <mesh filename="package://bullet_sim/meshes/Shank-Left.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -185,7 +185,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/Foot-Left.STL"/>
+        <mesh filename="package://bullet_sim/meshes/Foot-Left.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -215,7 +215,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/tORSO.STL"/>
+        <mesh filename="package://bullet_sim/meshes/tORSO.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -224,7 +224,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/tORSO.STL"/>
+        <mesh filename="package://bullet_sim/meshes/tORSO.STL"/>
       </geometry>
     </collision>
   </link>
@@ -251,7 +251,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/Upper-arm-right.STL"/>
+        <mesh filename="package://bullet_sim/meshes/Upper-arm-right.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -260,7 +260,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/Upper-arm-right.STL"/>
+        <mesh filename="package://bullet_sim/meshes/Upper-arm-right.STL"/>
       </geometry>
     </collision>
   </link>
@@ -273,7 +273,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/fore-arm-right.STL"/>
+        <mesh filename="package://bullet_sim/meshes/fore-arm-right.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -303,7 +303,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/Hand-Right.STL"/>
+        <mesh filename="package://bullet_sim/meshes/Hand-Right.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -312,7 +312,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/Hand-Right.STL"/>
+        <mesh filename="package://bullet_sim/meshes/Hand-Right.STL"/>
       </geometry>
     </collision>
   </link>
@@ -339,7 +339,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/Upper-arm-Left.STL"/>
+        <mesh filename="package://bullet_sim/meshes/Upper-arm-Left.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -348,7 +348,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0  0 0"/>
       <geometry>
-        <mesh filename="meshes/Upper-arm-Left.STL"/>
+        <mesh filename="package://bullet_sim/meshes/Upper-arm-Left.STL"/>
       </geometry>
     </collision>
   </link>
@@ -361,7 +361,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/fore-arm-Left.STL"/>
+        <mesh filename="package://bullet_sim/meshes/fore-arm-Left.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -391,7 +391,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/Hand-Left.STL"/>
+        <mesh filename="package://bullet_sim/meshes/Hand-Left.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -400,7 +400,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/Hand-Left.STL"/>
+        <mesh filename="package://bullet_sim/meshes/Hand-Left.STL"/>
       </geometry>
     </collision>
   </link>

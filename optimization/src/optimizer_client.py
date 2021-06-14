@@ -7,13 +7,18 @@ from optimization.srv import OptimizationResponse
 import numpy as np
 from geneticalgorithm import geneticalgorithm as ga
 
-
-
+##      Optimization Mode       ##
+#       1 ---> Energy            #
+#       2 ---> Joint Vel         #
+#       3 ---> Joint Torque      #
+#       4 ---> ZMP               #
+#   5 ---> Multi Objective       #
+mode = 1
 
 def f(X):
     rospy.wait_for_service('optimization')
     optimization_client = rospy.ServiceProxy('optimization',Optimization)
-    result = optimization_client(X[0], X[1], X[2], X[3], X[4])
+    result = optimization_client(X[0], X[1], X[2], X[3], X[4], mode)
     return(result.result)
 
 if __name__ == '__main__':

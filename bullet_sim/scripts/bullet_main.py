@@ -80,6 +80,10 @@ class robot_sim:
                                             controlMode=pybullet.POSITION_CONTROL,
                                             targetPosition = leftConfig[index])
                 pybullet.stepSimulation()
+
+                if pybullet.getLinkState(self.robotID,0)[0][2] < 0.5:
+                    print("Robot Heigh is lower than minimum acceptable height (=",pybullet.getLinkState(self.robotID,0)[0][2])
+                    return np.inf
                 
                 j_E += self.calcEnergy()
                 j_torque += self.calcTorque()
@@ -105,15 +109,25 @@ class robot_sim:
                 except:
                     print("Not enogh contact points")                
 
-                if self.render:
+                if self.render and self.iter % 100 == 0:
                     self.disp()
                 self.iter += 1
 
             except rospy.ServiceException as e:
                 print("Jntangls Service call failed: %s"%e)
 
-        print(j_E)
-        return j_E
+        if optim_req.mode == 1:
+            print(j_E)
+            return j_E
+        elif optim_req.mode == 2:
+            print(j_vel)
+            return j_vel
+        elif optim_req.mode == 3:
+            print(j_torque)
+            return j_torque
+        elif optim_req.mode == 4:
+            print(j_ZMP)
+            return j_ZMP
     
     def calcEnergy(self):
         energy = 0
@@ -278,7 +292,7 @@ class robot_sim:
 
 
 if __name__ == "__main__":
-    robot = robot_sim(render=False)
+    robot = robot_sim(render=True)
     robot.simulationSpin()
     #robot.run([])
     pass

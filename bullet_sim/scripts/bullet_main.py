@@ -14,7 +14,7 @@ import math
 import os
 
 class robot_sim:
-    def __init__(self, render, robot_vel = 0.7, time = 5.0, real_time = False, freq = 240.0):
+    def __init__(self, render, robot_vel = 0.6, time = 5.0, real_time = False, freq = 240.0):
         ## rosrun bullet_sim bullet.py
         ## run above command in catkin_work space
         

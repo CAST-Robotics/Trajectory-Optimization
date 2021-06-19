@@ -155,7 +155,7 @@ bool Robot::trajGenCallback(trajectory_planner::Trajectory::Request  &req,
     lAnkle_ = anklePlanner_->getTrajectoryL();
     rAnkle_ = anklePlanner_->getTrajectoryR();
     delete[] ankle_rf;
-
+    ROS_INFO("trajectory generated");
     res.result = true;
     isTrajAvailable_ = true;
     return true;
@@ -174,10 +174,12 @@ bool Robot::jntAngsCallback(trajectory_planner::JntAngs::Request  &req,
         this->spinOffline(req.iter, jnt_angs);
         for(int i = 0; i < 12; i++)
             res.jnt_angs[i] = jnt_angs[i];
+        ROS_INFO("joint angles requested");
     }else{
         ROS_INFO("First call traj_gen service");
         return false;
     }
+    ROS_INFO("joint angles returned");
     return true;
 }
 

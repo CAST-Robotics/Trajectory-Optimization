@@ -12,6 +12,7 @@ import rospy
 from trajectory_planner.srv import JntAngs, Trajectory
 from optimization.srv import Optimization
 import math
+import os
 
 class robot_sim:
     def __init__(self, render, robot_vel = 0.7, time = 5.0, real_time = False, freq = 240.0):
@@ -28,7 +29,7 @@ class robot_sim:
         rospy.init_node('surena_sim')
         self.rate = rospy.Rate(self.freq)
 
-        self.phisycsClient = pybullet.connect(pybullet.DIRECT)
+        self.phisycsClient = pybullet.connect(pybullet.GUI,options= "--opengl2")
         pybullet.setAdditionalSearchPath(pybullet_data.getDataPath())
 
         self.robotID = None
@@ -92,15 +93,30 @@ class robot_sim:
                 j_vel += self.calcVel()
                 
                 zmp = self.calcZMP_ft()
+
                 # getting support polygon
                 V = list("")
-                for point in pybullet.getContactPoints(self.robotID, self.planeID, 5):
+                """for point in pybullet.getContactPoints(self.robotID, self.planeID, 5):
                     V.append(point[6])
                 for point in pybullet.getContactPoints(self.robotID, self.planeID, 11):
                     V.append(point[6])
                 V = np.array(V)
                 for i in range(V.shape[0]):
-                    V[i,2] = V[i,0] + V[i,1]
+                    V[i,2] = V[i,0] + V[i,1]"""
+
+                if len(pybullet.getContactPoints(self.robotID, self.planeID, 5)) > 0:
+                    contact = pybullet.getLinkState(self.robotID,5)[0]
+                    V.append([contact[0]-0.09046, contact[1]-0.0811, contact[0]-0.09046 + contact[1]+0.0811 ])
+                    V.append([contact[0]-0.09046, contact[1]+0.0789, contact[0]-0.09046 + contact[1]-0.0789])
+                    V.append([contact[0]+0.1746, contact[1]-0.0811, contact[0]+0.1746 + contact[1]+0.0811])
+                    V.append([contact[0]+0.1746, contact[1]+0.0789, contact[0]+0.1746 + contact[1]-0.0789])
+                if len(pybullet.getContactPoints(self.robotID, self.planeID, 11)) > 0:
+                    contact = pybullet.getLinkState(self.robotID,11)[0]
+                    V.append([contact[0]-0.09046, contact[1]+0.0811, contact[0]-0.09046 + contact[1]+0.0811 ])
+                    V.append([contact[0]-0.09046, contact[1]-0.0789, contact[0]-0.09046 + contact[1]-0.0789])
+                    V.append([contact[0]+0.1746, contact[1]+0.0811, contact[0]+0.1746 + contact[1]+0.0811])
+                    V.append([contact[0]+0.1746, contact[1]-0.0789, contact[0]+0.1746 + contact[1]-0.0789])
+                
                 try:
                     V = V[V[:,2].argsort()]
                     print("sorted vertexes",V)
@@ -358,7 +374,7 @@ class robot_sim:
         self.planeID = pybullet.loadURDF("plane.urdf")
         pybullet.setGravity(0,0,-9.81)
         self.robotID = pybullet.loadURDF("src/Trajectory-Optimization/bullet_sim/surena4.urdf",useFixedBase = 0)
-        
+
         if self.real_time:
             pybullet.setRealTimeSimulation(1)
         else:

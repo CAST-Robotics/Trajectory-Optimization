@@ -24,7 +24,7 @@ Robot::Robot(ros::NodeHandle *nh){
 // }
 
 void Robot::spinOffline(int iter, double* config){
-
+    
     MatrixXd lfoot(3,1);
     MatrixXd rfoot(3,1);
     Matrix3d attitude = MatrixXd::Identity(3,3);
@@ -46,6 +46,8 @@ void Robot::doIK(MatrixXd pelvisP, Matrix3d pelvisR, MatrixXd leftAnkleP, Matrix
         joints_[i] = q_right[i];
         joints_[i+6] = q_left[i];
     }
+    delete[] q_left;
+    delete[] q_right;
 }
 
 Matrix3d Robot::Rroll(double phi){
@@ -73,7 +75,7 @@ double* Robot::geometricIK(MatrixXd p1, MatrixXd r1, MatrixXd p7, MatrixXd r7, b
         Reference: Introduction to Humanoid Robotics by Kajita        https://www.springer.com/gp/book/9783642545351
         1 ----> Body        7-----> Foot
     */
-
+   
     double* q = new double[6];  
     MatrixXd D(3,1);
 
@@ -131,9 +133,9 @@ bool Robot::trajGenCallback(trajectory_planner::Trajectory::Request  &req,
     double dt = 1.0/240.0;
     double swing_height = 0.05;
     double init_COM_height = thigh_ + shank_;  // SURENA IV initial height 
-
-    trajectoryPlanner_ = new DCMPlanner(COM_height, t_s, t_ds, dt, num_step, alpha);
-    anklePlanner_ = new Ankle(t_s, t_ds, swing_height, alpha, num_step, dt);
+    
+    DCMPlanner* trajectoryPlanner = new DCMPlanner(COM_height, t_s, t_ds, dt, num_step, alpha);
+    Ankle* anklePlanner = new Ankle(t_s, t_ds, swing_height, alpha, num_step, dt);
     Vector3d* dcm_rf = new Vector3d[num_step];  // DCM rF
     Vector3d* ankle_rf = new Vector3d[num_step + 2]; // Ankle rF
     
@@ -144,16 +146,16 @@ bool Robot::trajGenCallback(trajectory_planner::Trajectory::Request  &req,
     }
     ankle_rf[0] << 0.0, -ankle_rf[1](1), 0.0;
     ankle_rf[num_step + 1] << ankle_rf[num_step](0), -ankle_rf[num_step](0), 0.0;
-    trajectoryPlanner_->setFoot(dcm_rf);
-    trajectoryPlanner_->getXiTrajectory();
+    trajectoryPlanner->setFoot(dcm_rf);
+    trajectoryPlanner->getXiTrajectory();
     Vector3d com(0.0,0.0,init_COM_height);
-    com_ = trajectoryPlanner_->getCoM(com);
+    com_ = trajectoryPlanner->getCoM(com);
     delete[] dcm_rf;
 
-    anklePlanner_->updateFoot(ankle_rf);
-    anklePlanner_->generateTrajectory();
-    lAnkle_ = anklePlanner_->getTrajectoryL();
-    rAnkle_ = anklePlanner_->getTrajectoryR();
+    anklePlanner->updateFoot(ankle_rf);
+    anklePlanner->generateTrajectory();
+    lAnkle_ = anklePlanner->getTrajectoryL();
+    rAnkle_ = anklePlanner->getTrajectoryR();
     delete[] ankle_rf;
 
     res.result = true;

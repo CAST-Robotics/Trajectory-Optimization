@@ -47,6 +47,7 @@ class robot_sim:
         self.reset()
         print("server is running")
         rospy.wait_for_service("/traj_gen")
+
         trajectory_handle = rospy.ServiceProxy("/traj_gen", Trajectory)
         done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.t_step,
                     optim_req.step_length,optim_req.COM_height,math.ceil(self.simTime/optim_req.t_step))
@@ -184,7 +185,6 @@ class robot_sim:
         else:
             sole_id = 11
 
-        pybullet.enableJointForceTorqueSensor(self.robotID,sole_id)
         ft_data = pybullet.getJointState(self.robotID, sole_id)[2]
         if ft_data[2] == 0:
             return [0, 0, 0]
@@ -364,6 +364,9 @@ class robot_sim:
         else:
             pybullet.setRealTimeSimulation(0)
         
+        pybullet.enableJointForceTorqueSensor(self.robotID,5)
+        pybullet.enableJointForceTorqueSensor(self.robotID,11)
+
         if self.render:
             cv2.startWindowThread()
             cv2.namedWindow("Surena Optimization")

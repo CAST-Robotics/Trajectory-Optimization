@@ -48,8 +48,8 @@ class robot_sim:
         print("server is running")
         rospy.wait_for_service("/traj_gen")
         trajectory_handle = rospy.ServiceProxy("/traj_gen", Trajectory)
-        done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.step_length/self.robotVel,
-                    optim_req.step_length,optim_req.COM_height,math.ceil(self.simTime/(optim_req.step_length/self.robotVel)), optim_req.ankle_height)
+        done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.t_step,
+                    optim_req.t_step * self.robotVel,optim_req.COM_height,math.ceil(self.simTime/optim_req.t_step), optim_req.ankle_height)
         
         while not done:
             print("Trajectory generation failed, calling again...")

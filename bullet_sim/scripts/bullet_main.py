@@ -15,7 +15,7 @@ import math
 import os
 
 class robot_sim:
-    def __init__(self, render, robot_vel = 0.7, time = 5.0, real_time = False, freq = 240.0):
+    def __init__(self, render, robot_vel = 0.6, time = 5.0, real_time = False, freq = 240.0):
         ## rosrun bullet_sim bullet.py
         ## run above command in catkin_work space
         
@@ -51,15 +51,15 @@ class robot_sim:
 
         trajectory_handle = rospy.ServiceProxy("/traj_gen", Trajectory)
         done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.t_step,
-                    optim_req.step_length,optim_req.COM_height,math.ceil(self.simTime/optim_req.t_step))
-        #done = trajectory_handle(0.5,0.45,1.5,0.3,0.65,7)
-        if done:
-            print("trajectory has been recieved...")
+                    optim_req.t_step * self.robotVel,optim_req.COM_height,math.ceil(self.simTime/optim_req.t_step), optim_req.ankle_height)
+        
         while not done:
             print("Trajectory generation failed, calling again...")
             done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.t_step,
                     optim_req.step_length,optim_req.COM_height)
-        
+        if done:
+            print("trajectory has been recieved...")
+
         j_E = 0.0
         j_ZMP = 0.0
         j_torque = 0.0
@@ -77,11 +77,11 @@ class robot_sim:
                     pybullet.setJointMotorControl2(bodyIndex=self.robotID,
                                             jointIndex=index,
                                             controlMode=pybullet.POSITION_CONTROL,
-                                            targetPosition = rightConfig[index])
+                                            targetPosition = rightConfig[index], force = 85.0)
                     pybullet.setJointMotorControl2(bodyIndex=self.robotID,
                                             jointIndex=index + 6,
                                             controlMode=pybullet.POSITION_CONTROL,
-                                            targetPosition = leftConfig[index])
+                                            targetPosition = leftConfig[index], force = 85.0)
                 pybullet.stepSimulation()
 
                 if pybullet.getLinkState(self.robotID,0)[0][2] < 0.5:
@@ -119,7 +119,7 @@ class robot_sim:
                 
                 try:
                     V = V[V[:,2].argsort()]
-                    print("sorted vertexes",V)
+                    #print("sorted vertexes",V)
                     if self.zmpViolation(zmp, V):
                         j_ZMP += self.zmpOffset(zmp, V)
                     else:
@@ -396,7 +396,6 @@ class robot_sim:
 
 
 if __name__ == "__main__":
-    robot = robot_sim(render=False)
+    robot = robot_sim(time = 6.0, robot_vel = 0.6, render=False)
     robot.simulationSpin()
-    robot.run([])
     pass

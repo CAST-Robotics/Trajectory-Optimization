@@ -131,7 +131,7 @@ bool Robot::trajGenCallback(trajectory_planner::Trajectory::Request  &req,
     double step_len = req.step_length;
     int num_step = req.step_count;
     double dt = 1.0/240.0;
-    double swing_height = 0.05;
+    double swing_height = req.ankle_height;
     double init_COM_height = thigh_ + shank_;  // SURENA IV initial height 
     
     DCMPlanner* trajectoryPlanner = new DCMPlanner(COM_height, t_s, t_ds, dt, num_step, alpha);
@@ -157,7 +157,7 @@ bool Robot::trajGenCallback(trajectory_planner::Trajectory::Request  &req,
     lAnkle_ = anklePlanner->getTrajectoryL();
     rAnkle_ = anklePlanner->getTrajectoryR();
     delete[] ankle_rf;
-
+    ROS_INFO("trajectory generated");
     res.result = true;
     isTrajAvailable_ = true;
     return true;
@@ -176,10 +176,12 @@ bool Robot::jntAngsCallback(trajectory_planner::JntAngs::Request  &req,
         this->spinOffline(req.iter, jnt_angs);
         for(int i = 0; i < 12; i++)
             res.jnt_angs[i] = jnt_angs[i];
+        ROS_INFO("joint angles requested");
     }else{
         ROS_INFO("First call traj_gen service");
         return false;
     }
+    ROS_INFO("joint angles returned");
     return true;
 }
 

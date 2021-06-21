@@ -1,8 +1,8 @@
 float64 alpha
 float64 t_double_support
 float64 t_step
-float64 step_length
 float64 COM_height
+float64 ankle_height
 int16 mode
 ---
 float64 result

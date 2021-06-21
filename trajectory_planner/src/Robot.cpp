@@ -131,7 +131,7 @@ bool Robot::trajGenCallback(trajectory_planner::Trajectory::Request  &req,
     double step_len = req.step_length;
     int num_step = req.step_count;
     double dt = 1.0/240.0;
-    double swing_height = 0.05;
+    double swing_height = req.ankle_height;
     double init_COM_height = thigh_ + shank_;  // SURENA IV initial height 
     
     DCMPlanner* trajectoryPlanner = new DCMPlanner(COM_height, t_s, t_ds, dt, num_step, alpha);

@@ -50,8 +50,8 @@ class robot_sim:
         rospy.wait_for_service("/traj_gen")
 
         trajectory_handle = rospy.ServiceProxy("/traj_gen", Trajectory)
-        done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.t_step,
-                    optim_req.step_length,optim_req.COM_height,math.ceil(self.simTime/optim_req.t_step))
+        done = trajectory_handle(optim_req.alpha,optim_req.t_ds_ratio * optim_req.t_step,optim_req.t_step,
+                    optim_req.t_step * self.robotVel,optim_req.COM_height,math.ceil(self.simTime/optim_req.t_step), optim_req.ankle_height)
         #done = trajectory_handle(0.5,0.45,1.5,0.3,0.65,7)
         if done:
             print("trajectory has been recieved...")
@@ -77,11 +77,11 @@ class robot_sim:
                     pybullet.setJointMotorControl2(bodyIndex=self.robotID,
                                             jointIndex=index,
                                             controlMode=pybullet.POSITION_CONTROL,
-                                            targetPosition = rightConfig[index])
+                                            targetPosition = rightConfig[index], force = 90)
                     pybullet.setJointMotorControl2(bodyIndex=self.robotID,
                                             jointIndex=index + 6,
                                             controlMode=pybullet.POSITION_CONTROL,
-                                            targetPosition = leftConfig[index])
+                                            targetPosition = leftConfig[index], force = 90)
                 pybullet.stepSimulation()
 
                 if pybullet.getLinkState(self.robotID,0)[0][2] < 0.5:
@@ -373,6 +373,8 @@ class robot_sim:
         pybullet.resetSimulation()
         self.planeID = pybullet.loadURDF("plane.urdf")
         pybullet.setGravity(0,0,-9.81)
+        if os.getcwd() != "/home/cast/SurenaV/SurenaOptimization":
+            os.chdir("/home/cast/SurenaV/SurenaOptimization")
         self.robotID = pybullet.loadURDF("src/Trajectory-Optimization/bullet_sim/surena4.urdf",useFixedBase = 0)
 
         if self.real_time:
@@ -396,7 +398,7 @@ class robot_sim:
 
 
 if __name__ == "__main__":
-    robot = robot_sim(render=False)
+    robot = robot_sim(render=False, robot_vel=0.6,time=6)
     robot.simulationSpin()
     robot.run([])
     pass

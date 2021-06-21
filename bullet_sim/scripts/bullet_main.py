@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from numpy.lib.function_base import rot90
 import pybullet_data
 import pybullet
 
@@ -47,6 +48,7 @@ class robot_sim:
         self.reset()
         print("server is running")
         rospy.wait_for_service("/traj_gen")
+
         trajectory_handle = rospy.ServiceProxy("/traj_gen", Trajectory)
         done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.t_step,
                     optim_req.t_step * self.robotVel,optim_req.COM_height,math.ceil(self.simTime/optim_req.t_step), optim_req.ankle_height)
@@ -90,7 +92,7 @@ class robot_sim:
                 j_torque += self.calcTorque()
                 j_vel += self.calcVel()
                 
-                zmp = self.calcZMP()
+                zmp = self.calcZMP_ft()
 
                 # getting support polygon
                 V = list("")
@@ -192,6 +194,89 @@ class robot_sim:
         else:                # double support
             return (zmp_r * total_f_r + zmp_l * total_f_l)/(total_f_r + total_f_l)
     
+    def zmp_ft(self, is_right):
+        # measurement of zmp relative to sensor local coordinate using f/t sensor
+        if is_right:
+            sole_id = 5
+        else:
+            sole_id = 11
+
+        ft_data = pybullet.getJointState(self.robotID, sole_id)[2]
+        if ft_data[2] == 0:
+            return [0, 0, 0]
+        else:
+            x_zmp = -(ft_data[4]) / (ft_data[2])
+            y_zmp = -(ft_data[3]) / (ft_data[2])
+            return [x_zmp, y_zmp, ft_data[2]]
+
+    def calcZMP_ft(self):
+        total_zmp = np.zeros((3, 1))
+        l_x_zmp, l_y_zmp, l_fz = self.zmp_ft(False)
+        l_zmp = self.ankle2pelvis(np.array([l_x_zmp, l_y_zmp, 0.0]), False) # left foot zmp relative to pelvis
+        if abs(l_fz) < 5:
+            l_fz = 0
+
+        r_x_zmp, r_y_zmp, r_fz = self.zmp_ft(True)
+        r_zmp = self.ankle2pelvis(np.array([r_x_zmp, r_y_zmp, 0.0]), True) 
+        if abs(r_fz) < 5:
+            r_fz = 0
+            
+        if l_fz + r_fz == 0:
+            print("No foot contact!!")
+        else:
+            total_zmp = (r_zmp[0] * r_fz + l_zmp[0] * l_fz) / (l_fz + r_fz)
+        return total_zmp
+
+    def rotateAxisX(self, phi):
+        # alpha: angle in rad 
+        rot = np.array([[1, 0, 0], [0, np.cos(phi), -np.sin(phi)], [0, np.sin(phi), np.cos(phi)]])
+        return rot
+
+    def rotateAxisY(self, theta):
+        # theta: angle in rad 
+        rot = np.array([[np.cos(theta), 0, np.sin(theta)], [0, 1, 0], [-np.sin(theta), 0, np.cos(theta)]])
+        return rot
+
+    def rotateAxisZ(self, psi):
+        # psi: angle in rad 
+        rot = np.array([[np.cos(psi), -np.sin(psi), 0], [np.sin(psi), np.cos(psi), 0], [0, 0, 1]])
+        return rot
+
+    def homoTrans(self, axis, q, p):
+        # axis: rotation axis relative to global coordinate (0 -> x, 1 -> y, 2 -> z)
+        # q: rotation angle
+        # p: 3d array indicates translation 
+        if axis == 0:
+            return(np.block([[self.rotateAxisX(q), p.reshape((3,1))], [np.zeros((1, 3)), 1]]))
+        elif axis == 1:
+            return(np.block([[self.rotateAxisY(q), p.reshape((3,1))], [np.zeros((1, 3)), 1]]))
+        elif axis == 2:
+            return(np.block([[self.rotateAxisZ(q), p.reshape((3,1))], [np.zeros((1, 3)), 1]]))
+
+    def ankle2pelvis(self, p_a, is_right):
+        # p_a position relative to ankle coordinate
+        shank = 0.36
+        thigh = 0.37
+        torso = 0.115
+        if is_right:
+            t1 = self.homoTrans(2, pybullet.getJointState(self.robotID, 0)[0], np.array([0, -0.115, 0])) # hip yaw
+            t2 = self.homoTrans(0, pybullet.getJointState(self.robotID, 1)[0], np.zeros((1,3))) # hip roll
+            t3 = self.homoTrans(1, pybullet.getJointState(self.robotID, 2)[0], np.zeros((1,3))) # hip pitch
+            t4 = self.homoTrans(1, pybullet.getJointState(self.robotID, 3)[0], np.array([0, 0, -thigh])) # knee pitch
+            t5 = self.homoTrans(0, 0, np.array([0, 0, -shank]))
+            p_w = t1 @ t2 @ t3 @ t4 @ t5 @ (np.block([[p_a.reshape((3, 1))], [1]]))
+            return p_w[0:3]
+
+        else:
+            t1 = self.homoTrans(2, pybullet.getJointState(self.robotID, 6)[0], np.array([0, 0.115, 0])) # hip yaw
+            t2 = self.homoTrans(0, pybullet.getJointState(self.robotID, 7)[0], np.zeros((1,3))) # hip roll
+            t3 = self.homoTrans(1, pybullet.getJointState(self.robotID, 8)[0], np.zeros((1,3))) # hip pitch
+            t4 = self.homoTrans(1, pybullet.getJointState(self.robotID, 9)[0], np.array([0, 0, -thigh])) # knee pitch
+            t5 = self.homoTrans(0, 0, np.array([0, 0, -shank]))
+            p_w = t1 @ t2 @ t3 @ t4 @ t5 @ (np.block([[p_a.reshape((3, 1))], [1]]))
+            return p_w[0:3]
+
+
     def point2line(self,p0,p1,p2):
         # This function calculates distance between
         # point p0 and the line passing through p2,p1
@@ -288,15 +373,16 @@ class robot_sim:
         pybullet.resetSimulation()
         self.planeID = pybullet.loadURDF("plane.urdf")
         pybullet.setGravity(0,0,-9.81)
-        print("Current Directory",os.getcwd())
-        if (os.getcwd() != '/home/kassra/CAST/surena_ws/src'):
-            os.chdir('/home/kassra/CAST/surena_ws/src')
-        self.robotID = pybullet.loadURDF("bullet_sim/surena4.urdf",useFixedBase = 0)
+        self.robotID = pybullet.loadURDF("src/Trajectory-Optimization/bullet_sim/surena4.urdf",useFixedBase = 0)
+
         if self.real_time:
             pybullet.setRealTimeSimulation(1)
         else:
             pybullet.setRealTimeSimulation(0)
         
+        pybullet.enableJointForceTorqueSensor(self.robotID,5)
+        pybullet.enableJointForceTorqueSensor(self.robotID,11)
+
         if self.render:
             cv2.startWindowThread()
             cv2.namedWindow("Surena Optimization")

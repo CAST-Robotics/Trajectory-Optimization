@@ -30,8 +30,6 @@ class Robot{
         double shank_;
         double torso_;
 
-        DCMPlanner* trajectoryPlanner_;
-        Ankle* anklePlanner_;
 
         double joints_[12];
 

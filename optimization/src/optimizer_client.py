@@ -13,10 +13,11 @@ from geneticalgorithm import geneticalgorithm as ga
 #       3 ---> Joint Torque      #
 #       4 ---> ZMP               #
 #   5 ---> Multi Objective       #
-mode = 1
+
 class ObjectiveFunc:
     def __init__(self, mode):
         self.mode = mode
+
 
 
     def f(self, X):
@@ -38,9 +39,11 @@ if __name__ == '__main__':
                    'parents_portion': 0.3,\
                    'crossover_type':'uniform',\
                    'max_iteration_without_improv':30}
+
     varbound=np.array([[0.2 ,0.7], [0.1, 0.5], [0.5,1.3], [0.5, 0.7], [0.025, 0.075]])
     obj = ObjectiveFunc(1)
     for i in range(1,5):
         model=ga(function=obj.f,dimension=5,variable_type='real',variable_boundaries=varbound, algorithm_parameters=algorithm_param, function_timeout = 40 )
         model.run()
         obj.mode +=1   
+

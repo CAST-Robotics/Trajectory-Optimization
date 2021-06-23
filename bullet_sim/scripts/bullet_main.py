@@ -50,6 +50,7 @@ class robot_sim:
         rospy.wait_for_service("/traj_gen")
 
         trajectory_handle = rospy.ServiceProxy("/traj_gen", Trajectory)
+
         done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.t_step,
                     optim_req.t_step * self.robotVel,optim_req.COM_height,math.ceil(self.simTime/optim_req.t_step), optim_req.ankle_height)
         
@@ -373,6 +374,8 @@ class robot_sim:
         pybullet.resetSimulation()
         self.planeID = pybullet.loadURDF("plane.urdf")
         pybullet.setGravity(0,0,-9.81)
+        if os.getcwd() != "/home/cast/SurenaV/SurenaOptimization":
+            os.chdir("/home/cast/SurenaV/SurenaOptimization")
         self.robotID = pybullet.loadURDF("src/Trajectory-Optimization/bullet_sim/surena4.urdf",useFixedBase = 0)
 
         if self.real_time:
@@ -396,6 +399,7 @@ class robot_sim:
 
 
 if __name__ == "__main__":
+
     robot = robot_sim(time = 6.0, robot_vel = 0.6, render=False)
     robot.simulationSpin()
     pass

@@ -10,7 +10,7 @@ import cv2
 import rospy
 
 from trajectory_planner.srv import JntAngs, Trajectory
-from optimization.srv import Optimization
+from optimization.srv import Optimization,OptimizationResponse
 import math
 import os
 
@@ -51,13 +51,13 @@ class robot_sim:
 
         trajectory_handle = rospy.ServiceProxy("/traj_gen", Trajectory)
 
-        done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.t_step,
+        done = trajectory_handle(optim_req.alpha,optim_req.t_ds_ratio * optim_req.t_step,optim_req.t_step,
                     optim_req.t_step * self.robotVel,optim_req.COM_height,math.ceil(self.simTime/optim_req.t_step), optim_req.ankle_height)
         
         while not done:
             print("Trajectory generation failed, calling again...")
-            done = trajectory_handle(optim_req.alpha,optim_req.t_double_support,optim_req.t_step,
-                    optim_req.step_length,optim_req.COM_height)
+            done = trajectory_handle(optim_req.alpha,optim_req.t_ds_ratio * optim_req.t_step,optim_req.t_step,
+                    optim_req.t_step * self.robotVel,optim_req.COM_height,math.ceil(self.simTime/optim_req.t_step), optim_req.ankle_height)
         if done:
             print("trajectory has been recieved...")
 
@@ -65,6 +65,7 @@ class robot_sim:
         j_ZMP = 0.0
         j_torque = 0.0
         j_vel = 0.0
+        zmp_const = False
 
         while self.iter < self.simTime * self.freq:
             rospy.wait_for_service("/jnt_angs")
@@ -122,11 +123,13 @@ class robot_sim:
                     V = V[V[:,2].argsort()]
                     #print("sorted vertexes",V)
                     if self.zmpViolation(zmp, V):
+                        zmp_const = True
                         j_ZMP += self.zmpOffset(zmp, V)
                     else:
                         j_ZMP -= self.zmpOffset(zmp, V)
                 except:
-                    print("Not enogh contact points")                
+                    #print("Not enogh contact points") 
+                    pass               
 
                 if self.render and self.iter % 100 == 0:
                     self.disp()
@@ -134,7 +137,7 @@ class robot_sim:
 
             except rospy.ServiceException as e:
                 print("Jntangls Service call failed: %s"%e)
-
+        print("mode: ", optim_req.mode)
         if optim_req.mode == 1:
             print(j_E)
             return j_E
@@ -147,6 +150,18 @@ class robot_sim:
         elif optim_req.mode == 4:
             print(j_ZMP)
             return j_ZMP
+        if optim_req.mode == 5:
+            print("ZMP cost: ", j_ZMP)
+            print("ENERGY cost: ", j_E)
+            if zmp_const:
+                g = +10
+            else:
+                g = -10
+            """resp = OptimizationResponse()
+            resp.f1 = j_E
+            resp.f2 = j_ZMP
+            resp.g = g"""
+            return 10,  20, 30
     
     def calcEnergy(self):
         energy = 0
@@ -223,7 +238,8 @@ class robot_sim:
             r_fz = 0
             
         if l_fz + r_fz == 0:
-            print("No foot contact!!")
+            #print("No foot contact!!")
+            pass
         else:
             total_zmp = (r_zmp[0] * r_fz + l_zmp[0] * l_fz) / (l_fz + r_fz)
         return total_zmp
@@ -375,7 +391,7 @@ class robot_sim:
         self.planeID = pybullet.loadURDF("plane.urdf")
         pybullet.setGravity(0,0,-9.81)
         if os.getcwd() != "/home/cast/SurenaV/SurenaOptimization":
-            os.chdir("/home/cast/SurenaV/SurenaOptimization")
+            os.chdir("/home/kassra/CAST/surena_ws")
         self.robotID = pybullet.loadURDF("src/Trajectory-Optimization/bullet_sim/surena4.urdf",useFixedBase = 0)
 
         if self.real_time:

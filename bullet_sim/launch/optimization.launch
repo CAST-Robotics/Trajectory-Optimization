@@ -1,5 +1,11 @@
 <launch>
     <node pkg="trajectory_planner" type="trajectory_planner" name="trajectory_planner_node" output="screen"/>
-    <node pkg="optimization" type="optimizer_client.py" name="optimizer_node" output="screen"/>
+
+    <!-- Uncoment for single objective GA-->
+    <!--node pkg="optimization" type="optimizer_client.py" name="optimizer_node" output="screen"/-->
+
+    <!-- Uncoment for single objective GA-->
+    <node pkg="optimization" type="multiobjective.py" name="optimizer_node" output="screen"/>
+
     <node pkg="bullet_sim" type="bullet_main.py" name="simulation_node" output="screen"/>
 </launch>

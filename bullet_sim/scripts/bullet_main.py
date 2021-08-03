@@ -26,6 +26,9 @@ class robot_sim:
         self.freq = freq
         self.render = render
 
+        self.jointLimitsLow_ = np.array([-0.33, -0.35, -0.8, -.05, -0.61348, -0.3, -0.33, -0.05, -0.8, -0.05, -0.6138, -0.3])
+        self.jointLimitsHigh_ = np.array([0.24,  0.05,  0.35,  1.1, 0.3897,   0.3,  0.24,  0.35,  0.35, 1.1,   0.3897,  0.3])
+
         rospy.init_node('surena_sim')
         self.rate = rospy.Rate(self.freq)
 
@@ -67,11 +70,18 @@ class robot_sim:
         j_vel = 0.0
         zmp_const = False
 
-        while self.iter < self.simTime * self.freq:
+        feasible = True
+        while ((self.iter < self.simTime * self.freq) and feasible) or self.iter < 10:
             rospy.wait_for_service("/jnt_angs")
             try:
                 joint_state_handle = rospy.ServiceProxy("/jnt_angs", JntAngs)
                 All = joint_state_handle(self.iter).jnt_angs
+                # print("joint angles",All)
+                temp1 = self.jointLimitsLow_ - np.array(All)
+                temp2 = np.array(All) - self.jointLimitsHigh_
+                if((np.max(temp1) >= 0.05 or np.max(temp2) >= 0.05)) and self.iter > 10:
+                    #feasible = False
+                    pass
 
                 leftConfig = All[6:12]
                 rightConfig = All[0:6]
@@ -88,7 +98,11 @@ class robot_sim:
 
                 if pybullet.getLinkState(self.robotID,0)[0][2] < 0.5:
                     print("Robot Heigh is lower than minimum acceptable height (=",pybullet.getLinkState(self.robotID,0)[0][2])
-                    return np.inf
+                    j_E = np.inf
+                    j_ZMP = np.inf
+                    j_torque = np.inf
+                    j_vel = np.inf
+                    break
                 
                 j_E += self.calcEnergy()
                 j_torque += self.calcTorque()
@@ -120,8 +134,8 @@ class robot_sim:
                     V.append([contact[0]+0.1746, contact[1]-0.0789, contact[0]+0.1746 + contact[1]-0.0789])
                 
                 try:
+                    V = np.array(V)
                     V = V[V[:,2].argsort()]
-                    #print("sorted vertexes",V)
                     if self.zmpViolation(zmp, V):
                         zmp_const = True
                         j_ZMP += self.zmpOffset(zmp, V)
@@ -129,7 +143,7 @@ class robot_sim:
                         j_ZMP -= self.zmpOffset(zmp, V)
                 except:
                     #print("Not enogh contact points") 
-                    pass               
+                    pass
 
                 if self.render and self.iter % 100 == 0:
                     self.disp()
@@ -137,19 +151,28 @@ class robot_sim:
 
             except rospy.ServiceException as e:
                 print("Jntangls Service call failed: %s"%e)
+
         print("mode: ", optim_req.mode)
         if optim_req.mode == 1:
             print(j_E)
-            return j_E
+            res = OptimizationResponse()
+            res.j = [j_E]
+            return res
         elif optim_req.mode == 2:
             print(j_vel)
-            return j_vel
+            res = OptimizationResponse()
+            res.j = [j_vel]
+            return res
         elif optim_req.mode == 3:
             print(j_torque)
-            return j_torque
+            res = OptimizationResponse()
+            res.j = [j_torque]
+            return res
         elif optim_req.mode == 4:
             print(j_ZMP)
-            return j_ZMP
+            res = OptimizationResponse()
+            res.j = [j_ZMP]
+            return res
         if optim_req.mode == 5:
             print("ZMP cost: ", j_ZMP)
             print("ENERGY cost: ", j_E)
@@ -157,11 +180,9 @@ class robot_sim:
                 g = +10
             else:
                 g = -10
-            """resp = OptimizationResponse()
-            resp.f1 = j_E
-            resp.f2 = j_ZMP
-            resp.g = g"""
-            return 10,  20, 30
+            res = OptimizationResponse()
+            res.j = (j_ZMP, j_E, g)
+            return res
     
     def calcEnergy(self):
         energy = 0
@@ -241,7 +262,7 @@ class robot_sim:
             #print("No foot contact!!")
             pass
         else:
-            total_zmp = (r_zmp[0] * r_fz + l_zmp[0] * l_fz) / (l_fz + r_fz)
+            total_zmp = (r_zmp * r_fz + l_zmp * l_fz) / (l_fz + r_fz)
         return total_zmp
 
     def rotateAxisX(self, phi):
@@ -309,7 +330,6 @@ class robot_sim:
         # checks if zmp is inside the polygon shaped by
         # vertexes V using Windings algorithm
         # inspiration: http://www.dgp.toronto.edu/~mac/e-stuff/point_in_polygon.py
-
         if (V.shape[0] == 8):
             V = np.delete(V,3,0)
             V = np.delete(V,3,0)
@@ -320,7 +340,7 @@ class robot_sim:
             V = V.tolist()
             v = list([V[0],V[2],V[3],V[1],V[0]])
             V = np.array(v)
-
+  
         wn = 0
         for i in range(len(V)-1):     # edge from V[i] to V[i+1]
             if V[i][1] <= zmp[1]:        # start y <= P[1]
@@ -331,7 +351,7 @@ class robot_sim:
                 if V[i+1][1] <= zmp[1]:    # a downward crossing
                     if self.is_left(V[i], V[i+1], zmp) < 0: # P right of edge
                         wn -= 1           # have a valid down intersect
-        if wn == 0:
+        if wn == 0:           
             return True
         else:
             return False

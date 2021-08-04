@@ -134,18 +134,20 @@ bool Robot::trajGenCallback(trajectory_planner::Trajectory::Request  &req,
     double swing_height = req.ankle_height;
     double init_COM_height = thigh_ + shank_;  // SURENA IV initial height 
     
-    DCMPlanner* trajectoryPlanner = new DCMPlanner(COM_height, t_s, t_ds, dt, num_step, alpha);
+    DCMPlanner* trajectoryPlanner = new DCMPlanner(COM_height, t_s, t_ds, dt, num_step + 2, alpha);
     Ankle* anklePlanner = new Ankle(t_s, t_ds, swing_height, alpha, num_step, dt);
-    Vector3d* dcm_rf = new Vector3d[num_step];  // DCM rF
+    Vector3d* dcm_rf = new Vector3d[num_step + 2];  // DCM rF
     Vector3d* ankle_rf = new Vector3d[num_step + 2]; // Ankle rF
     
 
     for (int i = 0; i < num_step; i++){
-        dcm_rf[i] << i * step_len, pow(-1, i + 1) * torso_, 0.0;  // pow(-1, i + 1) : for specifing that first swing leg is left leg
+        dcm_rf[i+1] << i * step_len, pow(-1, i + 1) * torso_, 0.0;  // pow(-1, i + 1) : for specifing that first swing leg is left leg
         ankle_rf[i+1] << i * step_len, pow(-1, i + 1) * torso_, 0.0;
     }
+    dcm_rf[0] << 0.0, 0.0, 0.0;
     ankle_rf[0] << 0.0, -ankle_rf[1](1), 0.0;
-    ankle_rf[num_step + 1] << ankle_rf[num_step](0), -ankle_rf[num_step](0), 0.0;
+    ankle_rf[num_step + 1] << ankle_rf[num_step](0), -ankle_rf[num_step](1), 0.0;
+    dcm_rf[num_step + 1] << dcm_rf[num_step](0), 0.0, 0.0;
     trajectoryPlanner->setFoot(dcm_rf);
     trajectoryPlanner->getXiTrajectory();
     Vector3d com(0.0,0.0,init_COM_height);

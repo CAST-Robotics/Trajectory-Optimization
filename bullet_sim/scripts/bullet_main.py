@@ -15,7 +15,7 @@ import math
 import os
 
 class robot_sim:
-    def __init__(self, render, robot_vel = 0.6, time = 5.0, real_time = False, freq = 240.0):
+    def __init__(self, render, robot_vel = 0.7, time = 5.0, real_time = False, freq = 240.0):
         ## rosrun bullet_sim bullet.py
         ## run above command in catkin_work space
         
@@ -26,13 +26,15 @@ class robot_sim:
         self.freq = freq
         self.render = render
 
-        self.jointLimitsLow_ = np.array([-0.33, -0.35, -0.8, -.05, -0.61348, -0.3, -0.33, -0.05, -0.8, -0.05, -0.6138, -0.3])
-        self.jointLimitsHigh_ = np.array([0.24,  0.05,  0.35,  1.1, 0.3897,   0.3,  0.24,  0.35,  0.35, 1.1,   0.3897,  0.3])
+        self.jointLimitsLow_ = np.array([-0.33, -0.35, -0.8, -.05, -0.6016, -0.3, -0.33, -0.35, -0.8, -0.05, -0.6016, -0.3])  #Ankle mechanism is considered -0.4805 0.3937
+        self.jointLimitsHigh_ = np.array([0.24,  0.35,  0.35,  1.1, 0.43,   0.3,  0.24,  0.35,  0.35, 1.1, 0.43,  0.3])
 
         rospy.init_node('surena_sim')
         self.rate = rospy.Rate(self.freq)
 
         self.phisycsClient = pybullet.connect(pybullet.GUI,options= "--opengl2")
+        # self.phisycsClient = pybullet.connect(pybullet.DIRECT)
+
         pybullet.setAdditionalSearchPath(pybullet_data.getDataPath())
 
         self.robotID = None
@@ -71,7 +73,7 @@ class robot_sim:
         zmp_const = False
 
         feasible = True
-        while ((self.iter < self.simTime * self.freq) and feasible) or self.iter < 10:
+        while ((self.iter < self.simTime * self.freq) and feasible):
             rospy.wait_for_service("/jnt_angs")
             try:
                 joint_state_handle = rospy.ServiceProxy("/jnt_angs", JntAngs)
@@ -79,8 +81,12 @@ class robot_sim:
                 # print("joint angles",All)
                 temp1 = self.jointLimitsLow_ - np.array(All)
                 temp2 = np.array(All) - self.jointLimitsHigh_
-                if((np.max(temp1) >= 0.05 or np.max(temp2) >= 0.05)) and self.iter > 10:
-                    #feasible = False
+                if((np.max(temp1) >= 0.05 or np.max(temp2) >= 0.05)):
+                    feasible = False
+                    j_E = np.inf
+                    j_ZMP = np.inf
+                    j_torque = np.inf
+                    j_vel = np.inf
                     pass
 
                 leftConfig = All[6:12]
@@ -411,7 +417,7 @@ class robot_sim:
         self.planeID = pybullet.loadURDF("plane.urdf")
         pybullet.setGravity(0,0,-9.81)
         if os.getcwd() != "/home/cast/SurenaV/SurenaOptimization":
-            os.chdir("/home/kassra/CAST/surena_ws")
+            os.chdir("/home/cast/SurenaProject/Code/SurenaV/Optim_ws")
         self.robotID = pybullet.loadURDF("src/Trajectory-Optimization/bullet_sim/surena4.urdf",useFixedBase = 0)
 
         if self.real_time:
@@ -436,6 +442,6 @@ class robot_sim:
 
 if __name__ == "__main__":
 
-    robot = robot_sim(time = 6.0, robot_vel = 0.6, render=False)
+    robot = robot_sim(time = 6.0, robot_vel = 0.8 / 3.6, render=False)
     robot.simulationSpin()
     pass

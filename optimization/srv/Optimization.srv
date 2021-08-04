@@ -5,4 +5,4 @@ float64 COM_height
 float64 ankle_height
 int16 mode
 ---
-float64 result
+float64[] j

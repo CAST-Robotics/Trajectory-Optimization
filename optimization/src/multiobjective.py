@@ -46,15 +46,8 @@ class surena_offline(Problem):
 if __name__ == "__main__":
     rospy.wait_for_service('optimization')
     optimization_client = rospy.ServiceProxy('optimization',Optimization)
-    result = OptimizationResponse()
-    result = optimization_client(0.5,0.3,1.7,0.65,0.04,5)
-    print(result.f1, "   ", result.f2, "   ", result.g)
-    """problem = surena_offline()
-    #problem = get_problem("zdt5")
-    F, G, CV, feasible, dF, dG = problem.evaluate(np.random.rand(100, 5),
-                                              return_values_of=["F", "G", "CV", "feasible", "dF", "dG"])
-    print(F.shape)
-    print(G.shape)
+    
+    problem = surena_offline()
 
     algorithm = NSGA2(pop_size=100,
                         n_offsprings=75,
@@ -67,7 +60,7 @@ if __name__ == "__main__":
                 algorithm,
                 ('n_gen', 500),
                 seed=1,
-                verbose=False)
+                verbose=True)
     
     plot = Scatter()
     plot.add(problem.pareto_front(), plot_type="line", color="black", alpha=0.7)
@@ -75,4 +68,4 @@ if __name__ == "__main__":
     plot.show()
 
     df = pd.DataFrame(np.hstack(res.X,res.F))
-    df.to_excel()"""
+    df.to_excel()

@@ -83,10 +83,10 @@ class robot_sim:
                 temp2 = np.array(All) - self.jointLimitsHigh_
                 if((np.max(temp1) >= 0.05 or np.max(temp2) >= 0.05)):
                     feasible = False
-                    j_E = np.inf
-                    j_ZMP = np.inf
-                    j_torque = np.inf
-                    j_vel = np.inf
+                    j_E = 99999999
+                    j_ZMP = 99999999
+                    j_torque = 99999999
+                    j_vel = 99999999
                     pass
 
                 leftConfig = All[6:12]
@@ -104,10 +104,10 @@ class robot_sim:
 
                 if pybullet.getLinkState(self.robotID,0)[0][2] < 0.5:
                     print("Robot Heigh is lower than minimum acceptable height (=",pybullet.getLinkState(self.robotID,0)[0][2])
-                    j_E = np.inf
-                    j_ZMP = np.inf
-                    j_torque = np.inf
-                    j_vel = np.inf
+                    j_E = 99999999
+                    j_ZMP = 99999999
+                    j_torque = 99999999
+                    j_vel = 99999999
                     break
                 
                 j_E += self.calcEnergy()

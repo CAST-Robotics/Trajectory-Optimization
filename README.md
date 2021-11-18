@@ -24,7 +24,7 @@ There are four main ROS nodes in this package:
     <li>optimizer_server: solves the single-objective optimization</li>
 	<li>multiobjective: solves the multi-objective optimization</li>
 </ul>
-<img src="code-blocks.png" class="center", width="300">
+<img src="code-blocks.png" class="center", width="700">
 
 ### Build and Run
 <p>&#9888 This package depends on ROS, pybullet, pymoo and geneticalgorithm library.<br>

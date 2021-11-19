@@ -11,7 +11,7 @@ The trajectory planning method used to generated gait patterns for bipedal robot
 	<li><b>∆z:</b> defines CoM height</li>
 	<li><b>r<sub>F</sub>:</b> defines desired foot placements</li>
 </ul>
-We had to find the best set of abovementioned values for our robot so that it can walks at our desired pace with maximum stability and minimal power consumption. To do that, we used the Genetic algorithm.
+We had to find the best set of abovementioned values for our robot so that it can walks at our desired pace with maximum stability and minimal power consumption. To do that, we used the Genetic algorithm. For more information about this, you can read our paper located in ICRoM2021 folder.
 
 * * *
 

@@ -42,5 +42,4 @@ This will start the multi-objective optimization with all four cost functions. T
 
 ## References
 [1]	J. Englsberger, C. Ott, A. Albu-Sch¨affer. (2013)."Three-dimensional bipedal walking control using Divergent Component of Motion". International Conference on Intelligent Robots and Systems.<br>
-[2] AH. Vedadi, K. Sinaei, P. AbdolahNejad, S. AbouMasoudi, AY. Koma. 2021. “Optimizing DCM 
-Based Trajectory Generation Parameters for SURENA Humanoid Robot”. ICRoM 2021. Tehran. Iran<br>
+[2] AH. Vedadi, K. Sinaei, P. AbdolahNejad, S. AbouMasoudi, AY. Koma. 2021. “Bipedal Locomotion Optimization by Exploitation of the Full Dynamics in DCM Trajectory Planning ”. ICRoM 2021. Tehran. Iran<br>
